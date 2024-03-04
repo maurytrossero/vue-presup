@@ -4,13 +4,13 @@
     <h1 class="titulo">Calculador de Presupuesto para Fiesta de 15</h1>
 
     <!-- Sección de Precio Base -->
-    <div class="seccion-precio">
+    <div class="seccion-precio" v-if="isAdminLoggedIn">
       <label>Precio por 2 horas de cobertura </label>
       <input v-model="precioBase" type="number" />
     </div>
 
     <!-- Sección de Valor Hora Extra -->
-    <div class="seccion-hora-extra">
+    <div class="seccion-hora-extra" v-if="isAdminLoggedIn">
       <label>Precio por hora extra </label>
       <input v-model="costoHoraExtra" type="number" />
     </div>
@@ -26,7 +26,7 @@
     </div>
 
     <!-- Sección de Inflación Anual -->
-    <div class="seccion-inflacion-anual">
+    <div class="seccion-inflacion-anual" v-if="isAdminLoggedIn">
       <label>Inflación interanual %</label>
       <input v-model="inflacionAnual" type="number" /> 
     </div>
@@ -100,6 +100,7 @@ export default defineComponent({
       mesesProyectados: 0,
       inflacionAnual: 255,
       selectedItems: [] as string[],
+      isAdminLoggedIn: false, // Cambia este valor según el estado de autenticación del administrador
       items: [
         { label: 'Fiesta', value: 'fiesta', horasTrabajadas: 9 },
         { label: 'Sesion de fotos / Book', value: 'segundoItem', horasTrabajadas: 2 },
