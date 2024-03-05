@@ -220,6 +220,8 @@ export default defineComponent({
   padding: 10px;
   font-family: 'Arial', sans-serif;
   background-color: #f5f5f5;
+  border-radius: 10px; /* Borde redondeado de 10px */
+
 }
 
 /* Contenedor de la imagen */
