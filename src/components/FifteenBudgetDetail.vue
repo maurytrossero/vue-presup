@@ -86,12 +86,24 @@
 
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, PropType } from 'vue';
 import DateSelected from './DateSelected.vue';
 
 export default defineComponent({
   components: {
     DateSelected
+  },
+  props: {
+    isAdminLoggedIn: {
+      type: Boolean,
+      required: true
+    }
+  },
+  setup(props) {
+    console.log("El estado del admin es:", props.isAdminLoggedIn);
+
+    // Aquí puedes retornar cualquier cosa que desees utilizar dentro del componente
+    return {};
   },
   data() {
     return {
@@ -100,7 +112,6 @@ export default defineComponent({
       mesesProyectados: 0,
       inflacionAnual: 255,
       selectedItems: [] as string[],
-      isAdminLoggedIn: false, // Cambia este valor según el estado de autenticación del administrador
       items: [
         { label: 'Fiesta', value: 'fiesta', horasTrabajadas: 9 },
         { label: 'Sesion de fotos / Book', value: 'segundoItem', horasTrabajadas: 2 },
@@ -108,7 +119,6 @@ export default defineComponent({
       ] as { label: string; value: string; horasTrabajadas: number }[],
     };
   },
-
   methods: {
     calcularPresupuestoTotal(): number {
       return this.items

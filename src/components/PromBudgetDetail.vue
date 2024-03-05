@@ -113,6 +113,18 @@
     components: {
       DateSelected
     },
+    props: {
+      isAdminLoggedIn: {
+        type: Boolean,
+        required: true
+      }
+    },
+    setup(props) {
+      console.log("El estado del admin es:", props.isAdminLoggedIn);
+
+      // Aquí puedes retornar cualquier cosa que desees utilizar dentro del componente
+      return {};
+    },
     data() {
       return {
         precioBase: 50000,
@@ -120,7 +132,6 @@
         mesesProyectados: 1,
         inflacionAnual: 255,
         cantidadEgresados: 25,
-        isAdminLoggedIn: false, // Cambia este valor según el estado de autenticación del administrador
         selectedItems: [] as string[],
         items: [
           { label: 'Fiesta de egreso ', value: 'fiesta', horasTrabajadas: 9 },
