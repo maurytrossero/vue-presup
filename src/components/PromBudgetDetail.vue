@@ -3,13 +3,13 @@
       <h1 class="titulo">Calculador de Presupuesto para Egresados</h1>
   
       <!-- Sección de Precio Base -->
-      <div class="seccion-precio">
+      <div class="seccion-precio" v-if="isAdminLoggedIn">
         <label>Precio por 2 horas de cobertura </label>
         <input v-model="precioBase" type="number" />
       </div>
   
       <!-- Sección de Valor Hora Extra -->
-      <div class="seccion-hora-extra">
+      <div class="seccion-hora-extra" v-if="isAdminLoggedIn">
         <label>Precio por hora extra </label>
         <input v-model="costoHoraExtra" type="number" />
       </div>
@@ -26,7 +26,7 @@
 
   
       <!-- Sección de Inflación Anual -->
-      <div class="seccion-inflacion-anual">
+      <div class="seccion-inflacion-anual" v-if="isAdminLoggedIn">
         <label>Inflación interanual %</label>
         <input v-model="inflacionAnual" type="number" /> 
       </div>
@@ -113,6 +113,18 @@
     components: {
       DateSelected
     },
+    props: {
+      isAdminLoggedIn: {
+        type: Boolean,
+        required: true
+      }
+    },
+    setup(props) {
+      console.log("El estado del admin es:", props.isAdminLoggedIn);
+
+      // Aquí puedes retornar cualquier cosa que desees utilizar dentro del componente
+      return {};
+    },
     data() {
       return {
         precioBase: 50000,
@@ -175,30 +187,56 @@
         }
       },
   
+      generarMensajeCompartir(): string {
+        let mensaje: string;
+        const precioPorEgresado = this.mostrarPrecioPorEgresado;
+        const mesesProyectados = this.mesesProyectados;
+        const presupuestoTotal = this.mostrarPresupuesto;
+
+        if (this.cantidadEgresados <= 25) {
+          const presupuestoTotalFinanciado = this.mostrarPrecioFinanciado;
+          mensaje = `¡Hola! Te comparto el presupuesto calculado:
+            - Total Presupuesto: $${presupuestoTotal}
+            - Precio financiado por Egresado: $${precioPorEgresado}
+            - Cantidad de Egresados: ${this.cantidadEgresados}
+            - Meses para la Financiación: ${mesesProyectados}
+            - Presupuesto Total Financiado: $${presupuestoTotalFinanciado}`;
+        } else {
+          const presupuestoTotalFinanciado = (parseFloat(precioPorEgresado) * this.cantidadEgresados).toFixed(2);
+          mensaje = `¡Hola! Te comparto el presupuesto calculado:
+            - Total Presupuesto: $${presupuestoTotal}
+            - Precio financiado por Egresado: $${precioPorEgresado}
+            - Cantidad de Egresados: ${this.cantidadEgresados}
+            - Meses para la Financiación: ${mesesProyectados}
+            - Presupuesto Total Financiado: $${presupuestoTotalFinanciado}`;
+        }
+        return mensaje;
+      },
+
+        
       compartirPorWhatsApp() {
-        const mensaje = encodeURIComponent("¡Hola! Te comparto el presupuesto calculado: Total Presupuesto: $" + this.mostrarPresupuesto + " Precio Financiado: $" + this.mostrarPrecioFinanciado);
+        const mensaje = encodeURIComponent(this.generarMensajeCompartir());
         const url = "https://wa.me/?text=" + mensaje;
         window.open(url, '_blank');
       },
       compartirPorInstagram() {
-        const mensaje = encodeURIComponent("¡Hola! Te comparto el presupuesto calculado: Total Presupuesto: $" + this.mostrarPresupuesto + " Precio Financiado: $" + this.mostrarPrecioFinanciado);
+        const mensaje = encodeURIComponent(this.generarMensajeCompartir());
         const url = "instagram://direct?text=" + mensaje;
         window.open(url, '_blank');
       },
       compartirPorFacebookMessenger() {
-        const mensaje = encodeURIComponent("¡Hola! Te comparto el presupuesto calculado: Total Presupuesto: $" + this.mostrarPresupuesto + " Precio Financiado: $" + this.mostrarPrecioFinanciado);
+        const mensaje = encodeURIComponent(this.generarMensajeCompartir());
         const url = "fb-messenger://share?link=" + encodeURIComponent(window.location.href) + "&app_id=123456789&text=" + mensaje;
         window.open(url, '_blank');
       },
       compartirPorTelegram() {
-        const mensaje = encodeURIComponent("¡Hola! Te comparto el presupuesto calculado: Total Presupuesto: $" + this.mostrarPresupuesto + " Precio Financiado: $" + this.mostrarPrecioFinanciado);
+        const mensaje = encodeURIComponent(this.generarMensajeCompartir());
         const url = "https://t.me/share/url?url=&text=" + mensaje;
         window.open(url, '_blank');
-        
       },
       compartirPorEmail() {
         const asunto = encodeURIComponent("Presupuesto Compartido");
-        const cuerpo = encodeURIComponent("¡Hola! Te comparto el presupuesto calculado: Total Presupuesto: $" + this.mostrarPresupuesto + " Precio Financiado: $" + this.mostrarPrecioFinanciado);
+        const cuerpo = encodeURIComponent(this.generarMensajeCompartir());
         const url = "mailto:?subject=" + asunto + "&body=" + cuerpo;
         window.open(url, '_blank');
       },
@@ -242,6 +280,8 @@
     padding: 10px;
     font-family: 'Arial', sans-serif;
     background-color: #f5f5f5;
+    border-radius: 10px; /* Borde redondeado de 10px */
+
   }
   
   /* Contenedor de la imagen */
