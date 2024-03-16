@@ -61,7 +61,7 @@
         <!-- Cantidad de Egresados -->
         <div class="seccion-inflacion-anual">
             <label>Cantidad de Egresados </label>
-            <input v-model="cantidadEgresados" type="number" /> 
+            <input v-model="cantidadEgresados" type="number" min="0"/> 
         </div>
 
       <!-- Resultados -->
@@ -72,11 +72,10 @@
 
         <p class="precio-por-egresado">Precio por Egresado: $ {{ mostrarPrecioPorEgresado }}</p>
 
-        <p v-if="mesesProyectados >= 1 && cantidadEgresados <= 25" class="precio-financiado">
+        <p v-if="mesesProyectados >= 0 && cantidadEgresados > 0 && cantidadEgresados <= 25" class="precio-financiado">
           Precio Financiado por {{ cantidadEgresados }} egresados a {{ mesesProyectados }} meses: $ {{ mostrarPrecioFinanciado }}
         </p>
 
-        
         <p v-if="cantidadEgresados > 25 && mesesProyectados >= 1" class="precio-financiado">
           Precio Financiado por {{ cantidadEgresados }} egresados a {{ mesesProyectados }} meses: $ {{ (parseFloat(mostrarPrecioPorEgresado) * cantidadEgresados).toFixed(2) }}
         </p>
