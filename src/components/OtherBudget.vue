@@ -87,22 +87,32 @@
 </template>
 
 <script lang="ts">
-  import { defineComponent } from 'vue';
-  
-  export default defineComponent({
-    data() {
-      return {
-        precioBase: 50000,
-        costoHoraExtra: 14000,
-        mesesProyectados: 1,
-        inflacionAnual: 220,
-        selectedItemToAdd: '', // Agrega esta línea
-        selectedItems: [] as string[],
-        items: [
-          { label: 'Jornada', value: 'fiesta', horasTrabajadas: 9 },
-        ] as { label: string; value: string; horasTrabajadas: number }[],
-      };
-    },
+import { defineComponent } from 'vue';
+import DateSelected from './DateSelected.vue';
+
+export default defineComponent({
+  components: {
+    DateSelected
+  },
+  props: {
+    isAdminLoggedIn: {
+      type: Boolean,
+      required: true
+    }
+  },
+  setup(props) {
+    console.log("El estado del admin es:", props.isAdminLoggedIn);
+  },
+  data() {
+    return {
+      precioBase: 50000,
+      costoHoraExtra: 14000,
+      mesesProyectados: 0,
+      inflacionAnual: 255,
+      selectedItems: [{ label: 'Item 1', value: 'item1', horasTrabajadas: 2, selected: false }],
+      item1: { label: 'Item 1', value: 'item1', horasTrabajadas: 2 },
+    };
+  },
   
   methods: {
     calcularPresupuestoTotal(): number {

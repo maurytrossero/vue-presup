@@ -2,7 +2,7 @@
   <div class="app-container">
     <!-- Sección de Precio Base -->
     <div class="logo-container">
-      <img src="https://scontent.fcor3-1.fna.fbcdn.net/v/t39.30808-6/326524611_1565285560665566_1754105422097280677_n.jpg?_nc_cat=107&ccb=1-7&_nc_sid=efb6e6&_nc_eui2=AeEdpAEHHY6W1MLdHWynKe3Cnk9kmruN7dWeT2Sau43t1RH6KyNKMbrRPBz1p9roPlI&_nc_ohc=UrwF7PihpEYAX-w0Wdl&_nc_ht=scontent.fcor3-1.fna&oh=00_AfD5tTLHgPoZt2h2jBBTzDbPuw4y-r3OeegF1bMeE5GRcw&oe=65E7DC1B" alt="Logo" class="logo-image" />
+      <img src="../public/img/mt.jpg" alt="Logo" class="logo-image" />
     </div>
 
 
@@ -125,7 +125,7 @@ h1 {
 
 .app-container {
   /* Establecer la imagen de fondo */
-  background-image: url('https://scontent.fcor3-1.fna.fbcdn.net/v/t1.6435-9/70396637_10216853300858820_7895593591764942848_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=2be8e3&_nc_eui2=AeEKokZV9TQVAxc0oo5nYFM6-BCT7CxfWav4EJPsLF9Zq5NMV6nD4Dd_LJlizC6ATgQ&_nc_ohc=mv3jN7EFaIsAX9dDpQB&_nc_ht=scontent.fcor3-1.fna&oh=00_AfD1Ftnnsy_P_iDQpokEi8lOAEesfj9Px7eEYoI7T6_p6w&oe=65EA588A');
+  background-image: url('../public/img/background.jpg');
   /* Establecer el tamaño y posición de la imagen de fondo */
   background-size: cover;
   background-position: center;
