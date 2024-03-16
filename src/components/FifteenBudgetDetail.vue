@@ -4,13 +4,13 @@
     <h1 class="titulo">Calculador de Presupuesto para Fiesta de 15</h1>
 
     <!-- Sección de Precio Base -->
-    <div class="seccion-precio">
+    <div class="seccion-precio" v-if="isAdminLoggedIn">
       <label>Precio por 2 horas de cobertura </label>
       <input v-model="precioBase" type="number" />
     </div>
 
     <!-- Sección de Valor Hora Extra -->
-    <div class="seccion-hora-extra">
+    <div class="seccion-hora-extra" v-if="isAdminLoggedIn">
       <label>Precio por hora extra </label>
       <input v-model="costoHoraExtra" type="number" />
     </div>
@@ -26,7 +26,7 @@
     </div>
 
     <!-- Sección de Inflación Anual -->
-    <div class="seccion-inflacion-anual">
+    <div class="seccion-inflacion-anual" v-if="isAdminLoggedIn">
       <label>Inflación interanual %</label>
       <input v-model="inflacionAnual" type="number" /> 
     </div>
@@ -86,12 +86,24 @@
 
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, PropType } from 'vue';
 import DateSelected from './DateSelected.vue';
 
 export default defineComponent({
   components: {
     DateSelected
+  },
+  props: {
+    isAdminLoggedIn: {
+      type: Boolean,
+      required: true
+    }
+  },
+  setup(props) {
+    console.log("El estado del admin es:", props.isAdminLoggedIn);
+
+    // Aquí puedes retornar cualquier cosa que desees utilizar dentro del componente
+    return {};
   },
   data() {
     return {
@@ -107,7 +119,6 @@ export default defineComponent({
       ] as { label: string; value: string; horasTrabajadas: number }[],
     };
   },
-
   methods: {
     calcularPresupuestoTotal(): number {
       return this.items
@@ -209,6 +220,8 @@ export default defineComponent({
   padding: 10px;
   font-family: 'Arial', sans-serif;
   background-color: #f5f5f5;
+  border-radius: 10px; /* Borde redondeado de 10px */
+
 }
 
 /* Contenedor de la imagen */
