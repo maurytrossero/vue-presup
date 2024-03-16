@@ -94,7 +94,7 @@
         precioBase: 50000,
         costoHoraExtra: 14000,
         mesesProyectados: 1,
-        inflacionAnual: 220,
+        inflacionAnual: 276,
         selectedItemToAdd: '', // Agrega esta línea
         selectedItems: [] as string[],
         items: [

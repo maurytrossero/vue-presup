@@ -118,7 +118,7 @@
         precioBase: 50000,
         costoHoraExtra: 14000,
         mesesProyectados: 1,
-        inflacionAnual: 255,
+        inflacionAnual: 276,
         cantidadEgresados: 25,
         selectedItems: [] as string[],
         items: [
