@@ -4,6 +4,10 @@
     <div class="logo-container">
       <img src="../public/img/mt.jpg" alt="Logo" class="logo-image" />
     </div>
+    <!-- Barra fija para el inicio de sesión -->
+    <div class="fixed-login-bar">
+          <LoginView @login="handleLogin" @logout="handleLogout"  />
+        </div>
 
 
     <!-- Contenido de tu aplicación aquí -->  
