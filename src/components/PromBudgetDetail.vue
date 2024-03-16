@@ -134,7 +134,7 @@
         selectedItems: [] as string[],
         items: [
           { label: 'Fiesta de egreso ', value: 'fiesta', horasTrabajadas: 9 },
-          { label: 'Fiesta de egreso Segunda Camara ', value: 'octavoItem', horasTrabajadas: 8 },
+          { label: 'Fiesta de egreso Segunda Camara ', value: 'octavoItem', horasTrabajadas: 7 },
           { label: 'Acto de entrega de diplomas ', value: 'segundoItem', horasTrabajadas: 2 },
           { label: 'Sesion de fotos / Book ', value: 'tercerItem', horasTrabajadas: 3 },
           { label: 'Ultimo primer dia de clases ', value: 'cuartoItem', horasTrabajadas: 1 },
