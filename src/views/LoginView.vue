@@ -70,34 +70,37 @@ export default defineComponent({
 
 <style scoped>
 .login-bar {
-  display: flex; /* Hace que los elementos internos se alineen en una fila */
-  align-items: center; /* Centra verticalmente los elementos */
-  justify-content: center; /* Centra horizontalmente los elementos */
-  max-width: 400px; /* Establece un ancho máximo para la barra de inicio de sesión */
-  margin: 0 auto; /* Centra la barra horizontalmente */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%; /* Cambiado a máximo ancho posible */
+  margin: 0 auto;
+  padding: 0 20px; /* Añadido un poco de espacio a los lados */
 }
 
 .input-field {
-  flex: 1; /* Los campos de entrada ocupan todo el espacio disponible */
-  margin-right: 10px; /* Espacio entre los campos de entrada */
-  padding: 8px; /* Espaciado interno */
-  border: 1px solid #ccc; /* Borde */
-  border-radius: 4px; /* Esquinas redondeadas */
-  box-sizing: border-box; /* Incluir el borde y el relleno en el ancho total */
+  flex: 1;
+  margin-right: 10px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  max-width: 120px; /* Reducir el ancho máximo de los inputs */
 }
 
 button {
-  background-color: #007bff; /* Color de fondo */
-  color: #fff; /* Color del texto */
-  border: none; /* Sin borde */
-  padding: 8px 16px; /* Espaciado interno */
-  border-radius: 4px; /* Esquinas redondeadas */
-  cursor: pointer; /* Cursor de apuntar */
-  transition: background-color 0.3s; /* Transición suave */
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  max-width: 100px; /* Reducir el ancho máximo del botón */
 }
 
 button:hover {
-  background-color: #0056b3; /* Cambio de color al pasar el ratón */
+  background-color: #0056b3;
 }
 
 .logged-in-message {
