@@ -106,10 +106,10 @@
     },
     data() {
       return {
-        precioBase: 50000,
-        costoHoraExtra: 14000,
+        precioBase: 75000,
+        costoHoraExtra: 21000,
         mesesProyectados: 0,
-        inflacionAnual: 276,
+        inflacionAnual: 289,
         selectedItems: [] as string[],
         items: [
           { label: 'Previa / Ceremonia Religiosa / Fiesta ', value: 'fiesta', horasTrabajadas: 9 },

@@ -105,10 +105,10 @@ export default defineComponent({
   },
   data() {
     return {
-      precioBase: 50000,
-      costoHoraExtra: 14000,
-      mesesProyectados: 0,
-      inflacionAnual: 276,
+      precioBase: 75000,
+        costoHoraExtra: 21000,
+        mesesProyectados: 0,
+        inflacionAnual: 289,
       selectedItems: [{ label: 'Item 1', value: 'item1', horasTrabajadas: 2, selected: false }],
       item1: { label: 'Item 1', value: 'item1', horasTrabajadas: 2 },
     };
