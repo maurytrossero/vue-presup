@@ -110,7 +110,7 @@ export default defineComponent({
       precioBase: 75000,
         costoHoraExtra: 21000,
         mesesProyectados: 0,
-        inflacionAnual: 289,
+        inflacionAnual: 263,
       selectedItems: [] as string[],
       items: [
         { label: 'Fiesta', value: 'fiesta', horasTrabajadas: 9 },
