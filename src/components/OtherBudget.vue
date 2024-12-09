@@ -108,7 +108,7 @@ export default defineComponent({
       precioBase: 98000,
         costoHoraExtra: 28000,
         mesesProyectados: 0,
-        inflacionAnual: 236,
+        inflacionAnual: 193,
       selectedItems: [{ label: 'Item 1', value: 'item1', horasTrabajadas: 2, selected: false }],
       item1: { label: 'Item 1', value: 'item1', horasTrabajadas: 2 },
     };
