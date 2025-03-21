@@ -1,12 +1,16 @@
 // router/index.ts
 import { createRouter, createWebHistory, RouteLocationNormalized, NavigationGuardNext } from 'vue-router';
 import LoginView from '../views/LoginView.vue';
+import BudgetView from '@/views/BudgetView.vue';
 
 
 const routes = [
   { path: '/login', component: LoginView },
   // Otras rutas de tu aplicación
+  { path: '/presupuestos', component: BudgetView }, // Nueva ruta para BudgetView
+  { path: '/', redirect: '/budget' } // Redirigir la ruta raíz a /budget
 ];
+
 
 const router = createRouter({
   history: createWebHistory(),
