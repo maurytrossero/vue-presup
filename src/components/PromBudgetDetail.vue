@@ -23,8 +23,6 @@
         <input v-model="mesesProyectados" type="number" />
       </div>
 
-
-  
       <!-- Sección de Inflación Anual -->
       <div class="seccion-inflacion-anual" v-if="isAdminLoggedIn">
         <label>Inflación interanual %</label>
@@ -129,7 +127,7 @@
         precioBase: 110000,
         costoHoraExtra: 32000,
         mesesProyectados: 0,
-        inflacionAnual: 47.3,
+        inflacionAnual: 39.4,
         cantidadEgresados: 25,
         selectedItems: [] as string[],
         items: [

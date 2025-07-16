@@ -109,7 +109,7 @@
         precioBase: 110000,
         costoHoraExtra: 32000,
         mesesProyectados: 0,
-        inflacionAnual: 47.3,
+        inflacionAnual: 39.4,
         selectedItems: [] as string[],
         items: [
           { label: 'Previa / Ceremonia Religiosa / Fiesta ', value: 'fiesta', horasTrabajadas: 9 },
