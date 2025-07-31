@@ -1,4 +1,3 @@
-// src/services/fotoConfirmacionService.ts
 import { db, storage } from '@/services/firebase';
 import {
   ref as storageRef,
@@ -15,6 +14,16 @@ import {
   arrayUnion
 } from 'firebase/firestore';
 
+// src/types/Pedido.ts
+export interface Pedido {
+  id: string;
+  nombre: string;
+  paquete: number;
+  fotosExtra: number;
+  total: number;
+  comprobantes: { url: string; nombreArchivo: string }[];
+}
+
 export async function uploadComprobante(file: File): Promise<string> {
   const fileRef = storageRef(storage, `comprobantes/${Date.now()}_${file.name}`);
   await uploadBytes(fileRef, file);
@@ -26,7 +35,7 @@ export async function guardarPedido(data: any) {
   await addDoc(pedidosRef, {
     ...data,
     createdAt: serverTimestamp(),
-    comprobantes: [] // inicia vacío por si se agregan luego
+    comprobantes: []
   });
 }
 
@@ -40,18 +49,20 @@ export async function aprobarEstadoPedido(id: string): Promise<void> {
   await updateDoc(pedidoRef, { estado: 'aprobado' });
 }
 
-/**
- * Busca el pedido por WhatsApp recorriendo todos los pedidos y comparando en JS.
- * Útil para diagnosticar problemas de formato o indexación en Firestore.
- */
-export async function getPedidoPorWhatsapp(whatsapp: string) {
+export async function getPedidoPorWhatsapp(whatsapp: string): Promise<Pedido | null> {
   const snapshot = await getDocs(collection(db, 'fotoPedidos'));
-  const match = snapshot.docs.find(doc => {
-    const data = doc.data();
-    // Compara el WhatsApp con el ingresado, tal cual (puedes cambiar aquí para normalizar)
-    return data.whatsapp === whatsapp;
-  });
-  return match ? { id: match.id, ...match.data() } : null;
+  const match = snapshot.docs.find(doc => doc.data().whatsapp === whatsapp);
+  if (!match) return null;
+
+  const data = match.data();
+  return {
+    id: match.id,
+    nombre: data.nombre ?? '',
+    paquete: data.paquete ?? 1,
+    fotosExtra: data.fotosExtra ?? 0,
+    total: data.total ?? 0,
+    comprobantes: data.comprobantes ?? [],
+  };
 }
 
 export async function agregarComprobante(pedidoId: string, archivo: File) {
@@ -73,11 +84,11 @@ export async function agregarComprobante(pedidoId: string, archivo: File) {
 
 export const actualizarPedido = async (
   pedidoId: string,
-  datos: { paquete: number; fotosExtras: number }
+  datos: { paquete: number; fotosExtra: number }
 ) => {
   const docRef = doc(db, 'fotoPedidos', pedidoId);
   await updateDoc(docRef, {
     paquete: datos.paquete,
-    fotosExtras: datos.fotosExtras,
+    fotosExtra: datos.fotosExtra
   });
 };

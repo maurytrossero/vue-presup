@@ -118,6 +118,7 @@ const handleSubmit = async () => {
       fotosExtra: extras.value,
       total: total.value,
       comprobanteFile: comprobanteFile.value,
+      estado: 'pendiente', 
     });
 
     Swal.fire({

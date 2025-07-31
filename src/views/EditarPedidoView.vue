@@ -10,7 +10,7 @@
     <div v-if="pedido" class="pedido-card">
       <p><strong>Nombre:</strong> {{ pedido.nombre }}</p>
       <p><strong>Paquete:</strong> {{ nuevoPaquete }}</p>
-      <!-- Agregar campos de edición -->
+
       <div class="form-group">
         <label>Paquete seleccionado</label>
         <select v-model="nuevoPaquete" class="input">
@@ -56,8 +56,8 @@ import {
 interface Pedido {
   id: string;
   nombre: string;
-  paquete: string | number;
-  fotosExtras: number;
+  paquete: number;
+  fotosExtra: number;
   total: number;
   comprobantes: { url: string; nombreArchivo: string }[];
 }
@@ -69,7 +69,6 @@ const archivo = ref<File | null>(null);
 const nuevoPaquete = ref<number>(1);
 const nuevasExtras = ref<number>(0);
 
-// Función para parsear seguro números con fallback
 const safeNumber = (value: any, defaultValue = 0): number => {
   if (typeof value === 'number') return value;
   if (typeof value === 'string' && !isNaN(Number(value))) return Number(value);
@@ -79,20 +78,21 @@ const safeNumber = (value: any, defaultValue = 0): number => {
 const buscarPedido = async () => {
   const resultado = await getPedidoPorWhatsapp(whatsapp.value.trim());
   console.log('resultado:', resultado);
-  
-  if (
-    resultado &&
-    'paquete' in resultado &&
-    'fotosExtras' in resultado &&
-    'nombre' in resultado &&
-    'total' in resultado &&
-    'comprobantes' in resultado
-  ) {
-    pedido.value = resultado as Pedido;
+
+  if (resultado) {
+    pedido.value = {
+      id: resultado.id,
+      nombre: resultado.nombre ?? '',
+      paquete: safeNumber(resultado.paquete, 1),
+      fotosExtra: safeNumber(resultado.fotosExtra, 0),
+      total: safeNumber(resultado.total, 0),
+      comprobantes: resultado.comprobantes ?? []
+    };
+
     nuevoPaquete.value = safeNumber(resultado.paquete, 1);
-    nuevasExtras.value = safeNumber(resultado.fotosExtras, 0);
+    nuevasExtras.value = safeNumber(resultado.fotosExtra, 0);
   } else {
-    alert('Pedido no encontrado o datos incompletos');
+    alert('Pedido no encontrado');
     pedido.value = null;
   }
 };
@@ -112,7 +112,6 @@ const subirComprobante = async () => {
 const guardarCambios = async () => {
   if (!pedido.value) return;
 
-  // Validar antes de enviar
   const paqueteToSave = Number(nuevoPaquete.value);
   const extrasToSave = Number(nuevasExtras.value);
 
@@ -123,13 +122,14 @@ const guardarCambios = async () => {
 
   await actualizarPedido(pedido.value.id, {
     paquete: paqueteToSave,
-    fotosExtras: extrasToSave,
+    fotosExtra: extrasToSave
   });
 
   alert('Datos actualizados');
   buscarPedido();
 };
 </script>
+
 
 
 <style scoped>
