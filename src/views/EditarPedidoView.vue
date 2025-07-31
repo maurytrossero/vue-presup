@@ -27,13 +27,15 @@
 
       <button @click="guardarCambios" class="boton secundario">Guardar Cambios</button>
 
-      <p><strong>Total:</strong> ${{ pedido.total }}</p>
+      <p><strong>Total:</strong> ${{ totalCalculado }}</p>
 
-      <div class="form-group">
-        <label>Agregar nuevo comprobante</label>
-        <input type="file" @change="onFileChange" class="input-file" />
-        <button @click="subirComprobante" class="boton secundario">Subir</button>
-      </div>
+<div class="form-group">
+  <label class="custom-file-upload">
+    <input type="file" @change="onFileChange" />
+    📎 Seleccionar archivo
+  </label>
+</div>
+
 
       <h4>Comprobantes cargados:</h4>
       <ul class="comprobantes-lista">
@@ -46,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import {
   getPedidoPorWhatsapp,
   agregarComprobante,
@@ -61,6 +63,9 @@ interface Pedido {
   total: number;
   comprobantes: { url: string; nombreArchivo: string }[];
 }
+const totalCalculado = computed(() => {
+  return (nuevoPaquete.value * 4000) + (nuevasExtras.value * 4000);
+});
 
 const whatsapp = ref('');
 const pedido = ref<Pedido | null>(null);
@@ -211,4 +216,24 @@ const guardarCambios = async () => {
 .comprobantes-lista li {
   margin-bottom: 0.5rem;
 }
+.custom-file-upload {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  color: white;
+  background-color: #4a90e2;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+}
+
+.custom-file-upload:hover {
+  background-color: #3b7bd5;
+}
+
+/* Ocultamos el input nativo */
+.custom-file-upload input[type="file"] {
+  display: none;
+}
+
 </style>

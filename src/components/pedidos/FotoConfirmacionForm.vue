@@ -61,14 +61,19 @@
         </small>
       </div>
 
-      <!-- Comprobante -->
-      <div class="form-group">
-        <label for="comprobante">Comprobante de pago</label>
+    <!-- Comprobante -->
+    <div class="form-group">
+      <label for="comprobante">Comprobante de pago</label>
+      <label class="custom-file-upload">
         <input type="file" @change="handleFileUpload" accept="image/*" />
-        <p v-if="comprobanteFile" class="archivo-cargado">
-          Archivo: {{ comprobanteFile.name }}
-        </p>
-      </div>
+        <span>📎 Seleccionar archivo</span>
+      </label>
+      <p v-if="comprobanteFile" class="archivo-cargado">
+        Archivo: {{ comprobanteFile.name }}
+      </p>
+    </div>
+
+
 
       <!-- Botón -->
       <button type="submit" class="btn-enviar">Enviar pedido</button>
@@ -232,4 +237,30 @@ select {
     font-size: 1.5rem;
   }
 }
+.custom-file-upload {
+  display: inline-block;
+  padding: 0.6rem 1.2rem;
+  color: white; /* ✅ blanco */
+  background-color: #4a90e2;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s ease;
+  margin-top: 0.4rem;
+  text-align: center;
+}
+
+.custom-file-upload:hover {
+  background-color: #3b7ec4;
+}
+
+.custom-file-upload input[type="file"] {
+  display: none;
+}
+
+.custom-file-upload span {
+  color: white; /* ✅ aseguramos que el texto interno sea blanco */
+}
+
+
 </style>
