@@ -1,6 +1,9 @@
 <template>
   <div class="app-container">
-    <div class="background-overlay"></div>
+    <div
+      class="background-overlay"
+      :style="{ backgroundImage: `url(${backgroundImage})` }"
+    ></div>
 
     <!-- Logo redondo -->
     <div class="logo-container">
@@ -41,6 +44,7 @@ import PromBudgetDetail from '@/components/PromBudgetDetail.vue';
 import OtherBudgetDetail from '@/components/OtherBudget.vue';
 import LoginView from '@/views/LoginView.vue';
 const logoImage = new URL('@/assets/img/mt.jpg', import.meta.url).href;
+const backgroundImage = new URL('@/assets/img/background.jpg', import.meta.url).href;
 
 
 const selectedOption = ref('fifteen');
@@ -92,7 +96,6 @@ onMounted(() => {
   top: 0; left: 0;
   width: 100%;
   height: 100%;
-  background-image: url('../assets/img/background.jpg');
   background-size: cover;
   background-position: center;
   filter: brightness(0.95);

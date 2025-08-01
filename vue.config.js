@@ -1,9 +1,9 @@
 const { defineConfig } = require('@vue/cli-service');
 
 module.exports = defineConfig({
+  publicPath: './', // 👈 ESTA ES LA CLAVE para que los assets se carguen bien en producción
   transpileDependencies: [
-    'vue-router', // Transpilar vue-router
-    'axios' // Transpilar axios
-    // Agrega más dependencias si es necesario
+    'vue-router',
+    'axios'
   ]
 });
