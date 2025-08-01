@@ -28,9 +28,9 @@
         <label for="paquete">Paquete de fotos</label>
         <select id="paquete" v-model.number="paquete" required>
           <option disabled value="">Seleccionar</option>
-          <option :value="1">1 foto: individual - $4000</option>
-          <option :value="2">2 fotos: individual y con grupo catequista - $8000</option>
-          <option :value="3">3 fotos: individual, con grupo catequista y grupal en altar - $12000</option>
+          <option :value="1">1 foto - $4000</option>
+          <option :value="2">2 fotos - $8000</option>
+          <option :value="3">3 fotos - $12000</option>
         </select>
       </div>
 
@@ -130,14 +130,8 @@ const handleSubmit = async () => {
       title: 'Pedido enviado 🎉',
       text: 'Tu pedido fue registrado correctamente.',
       icon: 'success',
-      timer: 2000,
-      showConfirmButton: false,
+      confirmButtonText: 'Aceptar'
     });
-
-    // Opcional: redirigir a WhatsApp
-    const mensaje = `Hola, soy ${nombre.value}, acabo de hacer un pedido de fotos.`;
-    const waLink = `https://wa.me/${whatsapp.value}?text=${encodeURIComponent(mensaje)}`;
-    window.open(waLink, '_blank');
 
     // Limpiar formulario
     nombre.value = '';
@@ -150,104 +144,125 @@ const handleSubmit = async () => {
     console.error('Error guardando pedido:', error);
   }
 };
+
 </script>
 
 <style scoped>
+/* Fuente base */
+* {
+  font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
+}
+
+/* Contenedor principal */
 .formulario-container {
   max-width: 500px;
   margin: auto;
   padding: 2rem;
   background: #ffffff;
   border-radius: 1rem;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
 }
 
+/* Título */
 .titulo {
   text-align: center;
-  font-size: 1.8rem;
+  font-size: 2rem;
+  font-weight: 700;
   margin-bottom: 1.5rem;
-  color: #111827;
+  color: #1f2937;
 }
 
+/* Estilo de formulario */
 .formulario {
   display: flex;
   flex-direction: column;
-  gap: 1.2rem;
+  gap: 1.5rem;
 }
 
+/* Etiquetas */
 .form-group label {
   font-weight: 600;
-  margin-bottom: 0.3rem;
-  display: block;
+  margin-bottom: 0.4rem;
   color: #374151;
+  font-size: 0.95rem;
 }
 
+/* Inputs y select */
 input,
 select {
   width: 100%;
-  padding: 0.6rem;
+  padding: 0.7rem;
   border-radius: 0.5rem;
   border: 1px solid #d1d5db;
   font-size: 1rem;
+  background-color: #f9fafb;
+  color: #111827;
+  transition: border 0.2s, box-shadow 0.2s;
 }
 
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+}
+
+/* Alias */
 .alias {
   font-weight: 600;
   font-size: 1.1rem;
-  color: #4a90e2;
+  color: #2563eb;
 }
 
 .alias-tip {
-  font-size: 13px;
+  font-size: 0.85rem;
   color: #6b7280;
 }
 
+/* Total */
 .total-pago {
-  font-size: 1.4rem;
-  font-weight: bold;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: #10b981;
 }
 
+/* Archivo cargado */
 .archivo-cargado {
-  font-size: 14px;
-  color: #4b5563;
-  margin-top: 4px;
+  font-size: 0.9rem;
+  color: #374151;
+  margin-top: 0.3rem;
 }
 
+/* Botón */
 .btn-enviar {
   background-color: #4a90e2;
   color: white;
   font-size: 1.1rem;
-  padding: 0.8rem;
+  padding: 0.9rem;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 0.6rem;
   cursor: pointer;
-  transition: 0.2s;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
 }
 
 .btn-enviar:hover {
   background-color: #3b7ec4;
 }
 
-@media (max-width: 600px) {
-  .formulario-container {
-    padding: 1rem;
-  }
-  .titulo {
-    font-size: 1.5rem;
-  }
-}
+/* Custom file upload */
 .custom-file-upload {
   display: inline-block;
   padding: 0.6rem 1.2rem;
-  color: white; /* ✅ blanco */
+  color: white;
   background-color: #4a90e2;
   border-radius: 0.5rem;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
   transition: background-color 0.2s ease;
-  margin-top: 0.4rem;
   text-align: center;
+  font-size: 1rem;
 }
 
 .custom-file-upload:hover {
@@ -259,8 +274,23 @@ select {
 }
 
 .custom-file-upload span {
-  color: white; /* ✅ aseguramos que el texto interno sea blanco */
+  color: white;
 }
 
+/* Responsive */
+@media (max-width: 600px) {
+  .formulario-container {
+    padding: 1rem;
+  }
 
+  .titulo {
+    font-size: 1.6rem;
+  }
+
+  .btn-enviar {
+    font-size: 1rem;
+    padding: 0.8rem;
+  }
+}
 </style>
+

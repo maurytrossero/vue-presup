@@ -14,9 +14,9 @@
       <div class="form-group">
         <label>Paquete seleccionado</label>
         <select v-model="nuevoPaquete" class="input">
-          <option value="1">Paquete 1 (1 foto)</option>
-          <option value="2">Paquete 2 (2 fotos)</option>
-          <option value="3">Paquete 3 (3 fotos)</option>
+          <option value="1">1 foto - $4000</option>
+          <option value="2">2 fotos - $8000</option>
+          <option value="3">3 fotos - $12000</option>
         </select>
       </div>
 
@@ -135,23 +135,28 @@ const guardarCambios = async () => {
 };
 </script>
 
-
-
 <style scoped>
+/* Fuente global */
+* {
+  font-family: 'Inter', sans-serif;
+  box-sizing: border-box;
+}
+
 .editar-pedido-container {
   max-width: 600px;
   margin: 2rem auto;
   padding: 2rem;
   background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
 }
 
 .titulo {
-  font-size: 1.8rem;
-  margin-bottom: 1.5rem;
   text-align: center;
-  color: #333;
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  color: #1f2937;
 }
 
 .form-group {
@@ -161,31 +166,34 @@ const guardarCambios = async () => {
   margin-bottom: 1.5rem;
 }
 
-.input {
-  padding: 0.6rem 1rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
+/* Inputs y selects */
+.input,
+select {
+  padding: 0.7rem;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
   font-size: 1rem;
-  outline: none;
+  background-color: #f9fafb;
+  color: #111827;
+  transition: border 0.2s, box-shadow 0.2s;
 }
 
-.input:focus {
+.input:focus,
+select:focus {
+  outline: none;
   border-color: #4a90e2;
   box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
 }
 
-.input-file {
-  font-size: 0.95rem;
-}
-
+/* Botones */
 .boton {
   background-color: #4a90e2;
   color: white;
-  padding: 0.6rem 1.2rem;
+  padding: 0.7rem 1.2rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
   transition: background-color 0.2s ease;
 }
 
@@ -201,39 +209,57 @@ const guardarCambios = async () => {
   background-color: #059669;
 }
 
+/* Card de pedido */
 .pedido-card {
   background-color: #f9fafb;
-  padding: 1.2rem;
-  border-radius: 8px;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
   border: 1px solid #e5e7eb;
+  margin-top: 1rem;
+  color: #111827;
 }
 
+/* Lista de comprobantes */
 .comprobantes-lista {
   margin-top: 1rem;
-  padding-left: 1rem;
+  padding-left: 1.2rem;
+  font-size: 0.95rem;
 }
 
 .comprobantes-lista li {
   margin-bottom: 0.5rem;
 }
+
+/* File upload */
 .custom-file-upload {
   display: inline-block;
   padding: 0.6rem 1.2rem;
   color: white;
   background-color: #4a90e2;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
   transition: background-color 0.2s ease;
+  text-align: center;
+  font-size: 1rem;
 }
 
 .custom-file-upload:hover {
   background-color: #3b7bd5;
 }
 
-/* Ocultamos el input nativo */
 .custom-file-upload input[type="file"] {
   display: none;
 }
 
+/* Responsive */
+@media (max-width: 600px) {
+  .editar-pedido-container {
+    padding: 1rem;
+  }
+  .titulo {
+    font-size: 1.6rem;
+  }
+}
 </style>
+
