@@ -34,17 +34,14 @@ export default defineComponent({
     };
 
     const login = () => {
-      console.log('Intentando login con:', username.value, password.value);
-
       if (username.value === 'admin' && password.value === 'admin') {
         isLoggedIn.value = true;
         localStorage.setItem('isLoggedIn', 'true');
+        localStorage.setItem('token', 'admin'); // ✅ esto es clave
         emitLoginEvent(true);
-
         console.log('Login exitoso. Redirigiendo a /presupuestos');
         router.push('/presupuestos');
       } else {
-        console.warn('Credenciales incorrectas');
         alert('Credenciales incorrectas');
       }
     };
@@ -52,11 +49,11 @@ export default defineComponent({
     const logout = () => {
       isLoggedIn.value = false;
       localStorage.setItem('isLoggedIn', 'false');
+      localStorage.removeItem('token'); // ✅ también esto
       emitLoginEvent(false);
-
-      console.log('Logout realizado. Redirigiendo a /login');
       router.push('/login');
     };
+
 
     console.log('Estado inicial de login:', isLoggedIn.value);
     emitLoginEvent(isLoggedIn.value);
@@ -66,7 +63,6 @@ export default defineComponent({
   },
 });
 </script>
-
 
 <style scoped>
 .login-bar {
