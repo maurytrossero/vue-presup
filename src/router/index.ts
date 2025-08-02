@@ -10,7 +10,7 @@ const routes = [
   { path: '/foto-pedidos', component: FotoConfirmacionList, meta: { requiresAuth: true } },
   { path: '/foto-pedidos/nuevo', component: FotoConfirmacionForm, meta: { requiresAuth: true } },
   { path: '/', redirect: '/presupuestos' },
-  { path: '/foto-pedidos/editar',  name: 'EditarPedido',  component: () => import('@/views/EditarPedidoView.vue'),
+  { path: '/foto-pedidos/editar',  name: 'EditarPedido',  component: () => import('@/views/EditarPedidoView.vue')
 }
 
 ];

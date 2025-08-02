@@ -57,10 +57,10 @@ export default defineComponent({
       router.push('/login');
     };
 
-    // Comprobar el estado de la sesión al cargar el componente
-    if (!isLoggedIn.value) {
-      logout();
-    }
+    // NO redirigir automáticamente si no está logueado
+    // Solo emitir evento al padre
+    emitLoginEvent(isLoggedIn.value === true);
+
 
     return { username, password, login, logout, isLoggedIn };
   },
