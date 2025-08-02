@@ -34,7 +34,6 @@
   </div>
 </template>
 
-
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import FifteenBudgetDetail from '@/components/FifteenBudgetDetail.vue';
@@ -70,7 +69,6 @@ onMounted(() => {
   isAdminLoggedIn.value = localStorage.getItem('isAdminLoggedIn') === 'true';
 });
 </script>
-
 
 <style scoped>
 .app-container {

@@ -14,24 +14,33 @@ const routes = [
   { path: '/foto-pedidos/nuevo', component: FotoConfirmacionForm },
   { path: '/foto-pedidos/editar', component: EditarPedidoView },
 
-
   { path: '/', redirect: '/presupuestos' }
 ];
-
-
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
 });
 
+// ✅ Debug info del router completo
+console.log('[Router creado]', router);
+console.log('[Rutas definidas]', routes);
+
 router.beforeEach((to, from, next) => {
   const isAuthenticated = localStorage.getItem('token') !== null;
 
+  console.log('[Navegación]');
+  console.log('→ Desde:', from.fullPath);
+  console.log('→ Hacia:', to.fullPath);
+  console.log('→ Requiere auth:', to.meta.requiresAuth === true);
+  console.log('→ Está autenticado:', isAuthenticated);
+
   if (to.path === '/login' && isAuthenticated) {
-    next('/presupuestos'); // Ya logueado no ir a login
+    console.log('→ Ya autenticado, redirigiendo a /presupuestos');
+    next('/presupuestos');
   } else if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login'); // Si no está logueado y la ruta requiere auth, ir a login
+    console.log('→ No autenticado, redirigiendo a /login');
+    next('/login');
   } else {
     next();
   }

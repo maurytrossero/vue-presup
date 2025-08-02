@@ -29,16 +29,22 @@ export default defineComponent({
     const instance = getCurrentInstance();
 
     const emitLoginEvent = (loggedIn: boolean) => {
+      console.log('Emit login event:', loggedIn);
       instance?.emit('login', loggedIn);
     };
 
     const login = () => {
+      console.log('Intentando login con:', username.value, password.value);
+
       if (username.value === 'admin' && password.value === 'admin') {
         isLoggedIn.value = true;
         localStorage.setItem('isLoggedIn', 'true');
         emitLoginEvent(true);
+
+        console.log('Login exitoso. Redirigiendo a /presupuestos');
         router.push('/presupuestos');
       } else {
+        console.warn('Credenciales incorrectas');
         alert('Credenciales incorrectas');
       }
     };
@@ -47,15 +53,20 @@ export default defineComponent({
       isLoggedIn.value = false;
       localStorage.setItem('isLoggedIn', 'false');
       emitLoginEvent(false);
+
+      console.log('Logout realizado. Redirigiendo a /login');
       router.push('/login');
     };
 
+    console.log('Estado inicial de login:', isLoggedIn.value);
     emitLoginEvent(isLoggedIn.value);
+    console.log('Router disponible en LoginView:', router);
 
     return { username, password, login, logout, isLoggedIn };
   },
 });
 </script>
+
 
 <style scoped>
 .login-bar {
