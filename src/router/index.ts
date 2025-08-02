@@ -7,7 +7,7 @@ import EditarPedidoView from '@/views/EditarPedidoView.vue';
 
 const routes = [
   { path: '/login', component: LoginView },
-  { path: '/presupuestos', component: BudgetView, meta: { requiresAuth: true } },
+  { path: '/presupuestos', component: BudgetView },
 
   // Estas rutas NO requieren login
   { path: '/foto-pedidos', component: FotoConfirmacionList },
