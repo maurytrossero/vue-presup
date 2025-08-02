@@ -16,7 +16,7 @@
     </div>
 
     <!-- Contenido -->
-    <div class="container">
+    <div v-if="isAdminLoggedIn" class="container">
       <h1>Producción de Foto / Video Profesional</h1>
       <div class="select-container">
         <label for="service-select">Selecciona un Servicio:</label>
@@ -35,7 +35,6 @@
   </div>
 </template>
 
-
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import FifteenBudgetDetail from '@/components/FifteenBudgetDetail.vue';
@@ -43,9 +42,9 @@ import WeddingBudgetDetail from '@/components/WeddingBudgetDetail.vue';
 import PromBudgetDetail from '@/components/PromBudgetDetail.vue';
 import OtherBudgetDetail from '@/components/OtherBudget.vue';
 import LoginView from '@/views/LoginView.vue';
+
 const logoImage = new URL('https://dl.dropboxusercontent.com/scl/fi/88du6azdw0ra19avnk31l/mt.jpg?rlkey=aqiids5q04l4fmymp0j4bjhru&st=avkk9osm', import.meta.url).href;
 const backgroundImage = new URL('https://dl.dropboxusercontent.com/scl/fi/xlzcgnnmjinncvex5f524/background.jpg?rlkey=kctu2redkuelqy2wlspz0aliv&st=kl8bpsjc', import.meta.url).href;
-
 
 const selectedOption = ref('fifteen');
 const isAdminLoggedIn = ref(false);
@@ -71,6 +70,7 @@ onMounted(() => {
   isAdminLoggedIn.value = localStorage.getItem('isAdminLoggedIn') === 'true';
 });
 </script>
+
 
 <style scoped>
 .app-container {
