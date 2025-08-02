@@ -51,7 +51,7 @@ export default defineComponent({
       localStorage.setItem('isLoggedIn', 'false');
       localStorage.removeItem('token'); // ✅ también esto
       emitLoginEvent(false);
-      router.push('/login');
+      router.push('/presupuestos');
     };
 
 
