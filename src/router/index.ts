@@ -3,6 +3,7 @@ import LoginView from '../views/LoginView.vue';
 import BudgetView from '@/views/BudgetView.vue';
 import FotoConfirmacionForm from '@/components/pedidos/FotoConfirmacionForm.vue';
 import FotoConfirmacionList from '@/components/pedidos/FotoConfirmacionList.vue';
+import EditarPedidoView from '@/views/EditarPedidoView.vue';
 
 const routes = [
   { path: '/login', component: LoginView },
@@ -11,11 +12,8 @@ const routes = [
   // Estas rutas NO requieren login
   { path: '/foto-pedidos', component: FotoConfirmacionList },
   { path: '/foto-pedidos/nuevo', component: FotoConfirmacionForm },
-  {
-    path: '/foto-pedidos/editar',
-    name: 'EditarPedido',
-    component: () => import('@/views/EditarPedidoView.vue')
-  },
+  { path: '/foto-pedidos/editar', component: EditarPedidoView },
+
 
   { path: '/', redirect: '/presupuestos' }
 ];
