@@ -1,23 +1,21 @@
 <template>
   <div class="app-container">
-    <div
-      class="background-overlay"
-      :style="{ backgroundImage: `url(${backgroundImage})` }"
-    ></div>
+    <div class="background-overlay" :style="{ backgroundImage: `url(${backgroundImage})` }"></div>
 
-    <!-- Logo redondo -->
+    <!-- Logo -->
     <div class="logo-container">
       <img :src="logoImage" alt="Imagen" class="logo-image" />
     </div>
 
-    <!-- Barra de login fija -->
+    <!-- Login fijo -->
     <div class="fixed-login-bar">
       <LoginView @login="handleLogin" @logout="handleLogout" />
     </div>
 
-    <!-- Contenido -->
-    <div v-if="isAdminLoggedIn" class="container">
+    <!-- SIEMPRE visible -->
+    <div class="container">
       <h1>Producción de Foto / Video Profesional</h1>
+
       <div class="select-container">
         <label for="service-select">Selecciona un Servicio:</label>
         <select v-model="selectedOption" id="service-select" class="select">
@@ -29,11 +27,13 @@
       </div>
 
       <div class="form-container">
+        <!-- componente recibe si el admin está logueado -->
         <component :is="selectedComponent" :isAdminLoggedIn="isAdminLoggedIn" />
       </div>
     </div>
   </div>
 </template>
+
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';

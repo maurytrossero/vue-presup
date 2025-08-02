@@ -7,8 +7,8 @@
     </template>
     <template v-else>
       <div class="logged-in-message">
-        <p>¡El administrador está logueado!</p>
-        <button @click.prevent="logout">Cerrar Sesión</button>
+        <p>Admin logueado</p>
+        <button @click.prevent="logout">Cerrar</button>
       </div>
     </template>
   </div>
@@ -29,44 +29,33 @@ export default defineComponent({
     const instance = getCurrentInstance();
 
     const emitLoginEvent = (loggedIn: boolean) => {
-      if (instance) {
-        instance.emit('login', loggedIn); // Emitir evento de inicio de sesión
-      }
+      instance?.emit('login', loggedIn);
     };
 
     const login = () => {
-      // Verificar las credenciales
       if (username.value === 'admin' && password.value === 'admin') {
-        // Credenciales válidas, redirigir a la sección de administración
+        isLoggedIn.value = true;
+        localStorage.setItem('isLoggedIn', 'true');
+        emitLoginEvent(true);
         router.push('/presupuestos');
-        emitLoginEvent(true); // Emitir evento de inicio de sesión
-        isLoggedIn.value = true; // Establecer como logueado
-        localStorage.setItem('isLoggedIn', 'true'); // Guardar en el almacenamiento local
       } else {
-        // Credenciales inválidas, mostrar un mensaje de error
-        console.error('Credenciales incorrectas');
+        alert('Credenciales incorrectas');
       }
     };
 
-
     const logout = () => {
-      // Limpiar datos de autenticación y redirigir a la página de inicio de sesión
       isLoggedIn.value = false;
-      localStorage.setItem('isLoggedIn', 'false'); // Actualizar el estado en el almacenamiento local
-      emitLoginEvent(false); // Emitir evento de cierre de sesión
+      localStorage.setItem('isLoggedIn', 'false');
+      emitLoginEvent(false);
       router.push('/login');
     };
 
-    // NO redirigir automáticamente si no está logueado
-    // Solo emitir evento al padre
-    emitLoginEvent(isLoggedIn.value === true);
-
+    emitLoginEvent(isLoggedIn.value);
 
     return { username, password, login, logout, isLoggedIn };
   },
 });
 </script>
-
 
 <style scoped>
 .login-bar {

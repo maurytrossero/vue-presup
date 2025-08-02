@@ -269,22 +269,21 @@
 </script>
   
 <style scoped>
+/* Estilos Generales */
 .presupuesto-container {
-  max-width: 850px;
-  margin: 20px auto;
-  padding: 20px;
-  background-color: #fafafa;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  font-family: 'Segoe UI', sans-serif;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 10px;
+  font-family: 'Arial', sans-serif;
+  background-color: #f5f5f5;
+  border-radius: 10px;
 }
 
 .titulo {
-  font-size: 22px;
-  font-weight: bold;
-  text-align: center;
-  margin-bottom: 20px;
+  font-size: 20px;
+  margin-bottom: 15px;
   color: #333;
+  text-align: center;
 }
 
 /* Secciones */
@@ -294,101 +293,110 @@
 .seccion-inflacion-anual,
 .seccion-items,
 .resultados {
-  background: #fff;
+  background-color: #fff;
   padding: 15px;
   border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   margin-bottom: 15px;
-  border: 1px solid #eee;
 }
 
-/* Inputs */
-input[type="number"] {
-  width: 100%;
-  padding: 10px;
-  margin-top: 5px;
+.subtitulo {
+  font-size: 16px;
   margin-bottom: 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  box-sizing: border-box;
+  color: #555;
 }
 
-/* Ítems */
+/* Elementos de Item */
 .item-container {
-  background: #fdfdfd;
-  border: 1px solid #eee;
-  padding: 10px;
-  border-radius: 8px;
+  flex-direction: column;
   margin-bottom: 10px;
 }
 
-.item-label {
-  font-weight: 500;
-  margin-left: 6px;
+.item-label,
+.horas-input,
+.costo-text {
+  width: 100%;
+  margin-right: 0;
 }
 
 .horas-input {
-  margin-top: 6px;
-  margin-bottom: 4px;
+  width: 60px;
+  margin-right: 10px;
   padding: 8px;
-  width: 80px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
 }
 
 .costo-text {
-  font-size: 13px;
-  color: #666;
-  margin-top: 4px;
-  font-style: italic;
+  font-size: 12px;
+  color: #777;
+  margin-top: 5px;
 }
 
 /* Resultados */
-.subtitulo {
-  font-size: 18px;
-  font-weight: bold;
-  margin-bottom: 10px;
-  color: #444;
-}
-
 .total-presupuesto,
 .precio-financiado,
 .precio-por-egresado {
   font-size: 16px;
-  margin: 6px 0;
+  margin-bottom: 10px;
+  color: #333;
 }
 
-/* Botones compartir */
+/* Estilos para Inputs específicos */
+.seccion-precio input,
+.seccion-hora-extra input,
+.seccion-meses-proyeccion input,
+.seccion-inflacion-anual input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+  font-size: 14px;
+}
+
+/* Ajustes para Dispositivos Móviles */
+@media screen and (max-width: 600px) {
+  .seccion-precio input,
+  .seccion-hora-extra input,
+  .seccion-meses-proyeccion input,
+  .seccion-inflacion-anual input {
+    margin-bottom: 15px;
+  }
+}
+
+/* Estilos para los botones de compartir */
 .botones-container {
   text-align: center;
-  margin-top: 25px;
 }
 
 .compartir-titulo {
   margin-bottom: 10px;
-  font-weight: bold;
 }
 
 .botones-compartir {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  flex-wrap: wrap;
+  display: inline-block;
 }
 
 .botones-compartir button {
   width: 50px;
   height: 50px;
+  margin: 0 10px;
+  display: inline-block;
+  background-size: cover;
+  background-repeat: no-repeat;
   border: none;
   border-radius: 50%;
-  background-size: cover;
-  background-position: center;
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: background-color 0.3s;
 }
 
 .botones-compartir button:hover {
-  transform: scale(1.1);
+  background-color: #ccc;
 }
 
-/* Iconos personalizados */
 .facebook-button {
   background-image: url('https://e7.pngegg.com/pngimages/335/1001/png-clipart-social-media-facebook-computer-icons-social-network-linkedin-text-logo-internet.png');
 }
@@ -408,20 +416,5 @@ input[type="number"] {
 .email-button {
   background-image: url('https://e7.pngegg.com/pngimages/191/108/png-clipart-computer-icons-email-email-miscellaneous-blue-thumbnail.png');
 }
-
-/* Responsive */
-@media screen and (max-width: 600px) {
-  .botones-compartir {
-    gap: 8px;
-  }
-
-  .botones-compartir button {
-    width: 44px;
-    height: 44px;
-  }
-
-  .titulo {
-    font-size: 20px;
-  }
-}
 </style>
+

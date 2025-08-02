@@ -1,7 +1,7 @@
 <template>
   <div class="presupuesto-container">
     
-    <h1 class="titulo">Calculador de Presupuesto para Fiesta de 15</h1>
+    <h1 class="titulo">Calculador de Presupuesto personalizado</h1>
 
     <!-- Sección de Precio Base -->
     <div class="seccion-precio" v-if="isAdminLoggedIn">
