@@ -43,8 +43,8 @@ import WeddingBudgetDetail from '@/components/WeddingBudgetDetail.vue';
 import PromBudgetDetail from '@/components/PromBudgetDetail.vue';
 import OtherBudgetDetail from '@/components/OtherBudget.vue';
 import LoginView from '@/views/LoginView.vue';
-const logoImage = new URL('@/assets/img/mt.jpg', import.meta.url).href;
-const backgroundImage = new URL('@/assets/img/background.jpg', import.meta.url).href;
+const logoImage = new URL('https://dl.dropboxusercontent.com/scl/fi/88du6azdw0ra19avnk31l/mt.jpg?rlkey=aqiids5q04l4fmymp0j4bjhru&st=avkk9osm', import.meta.url).href;
+const backgroundImage = new URL('https://dl.dropboxusercontent.com/scl/fi/xlzcgnnmjinncvex5f524/background.jpg?rlkey=kctu2redkuelqy2wlspz0aliv&st=kl8bpsjc', import.meta.url).href;
 
 
 const selectedOption = ref('fifteen');
