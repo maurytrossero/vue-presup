@@ -38,7 +38,7 @@ export default defineComponent({
       // Verificar las credenciales
       if (username.value === 'admin' && password.value === 'admin') {
         // Credenciales válidas, redirigir a la sección de administración
-        router.push('/admin');
+        router.push('/presupuestos');
         emitLoginEvent(true); // Emitir evento de inicio de sesión
         isLoggedIn.value = true; // Establecer como logueado
         localStorage.setItem('isLoggedIn', 'true'); // Guardar en el almacenamiento local
