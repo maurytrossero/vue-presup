@@ -7,11 +7,19 @@ import FotoConfirmacionList from '@/components/pedidos/FotoConfirmacionList.vue'
 const routes = [
   { path: '/login', component: LoginView },
   { path: '/presupuestos', component: BudgetView, meta: { requiresAuth: true } },
-  { path: '/foto-pedidos', component: FotoConfirmacionList, meta: { requiresAuth: true } },
-  { path: '/foto-pedidos/nuevo', component: FotoConfirmacionForm, meta: { requiresAuth: true } },
-  { path: '/', redirect: '/presupuestos' },
-  { path: '/foto-pedidos/editar',  name: 'EditarPedido',  component: () => import('@/views/EditarPedidoView.vue') }, // 👈 acá faltaba la coma
+
+  // Estas rutas NO requieren login
+  { path: '/foto-pedidos', component: FotoConfirmacionList },
+  { path: '/foto-pedidos/nuevo', component: FotoConfirmacionForm },
+  {
+    path: '/foto-pedidos/editar',
+    name: 'EditarPedido',
+    component: () => import('@/views/EditarPedidoView.vue')
+  },
+
+  { path: '/', redirect: '/presupuestos' }
 ];
+
 
 
 const router = createRouter({
