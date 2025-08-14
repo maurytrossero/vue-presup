@@ -85,8 +85,6 @@
   <script lang="ts">
   import { defineComponent } from 'vue';
   import DateSelected from './DateSelected.vue';
-
-  
   
   export default defineComponent({
     components: {
@@ -106,10 +104,10 @@
     },
     data() {
       return {
-        precioBase: 110000,
-        costoHoraExtra: 32000,
+        precioBase: 124000,
+        costoHoraExtra: 36000,
         mesesProyectados: 0,
-        inflacionAnual: 39.4,
+        inflacionAnual: 36.6,
         selectedItems: [] as string[],
         items: [
           { label: 'Previa / Ceremonia Religiosa / Fiesta ', value: 'fiesta', horasTrabajadas: 9 },
@@ -208,9 +206,7 @@
     },
   });
   </script>
-  
-  
-  
+    
   <style scoped>
   /* Estilos Generales */
   .presupuesto-container {
