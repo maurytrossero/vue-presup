@@ -7,14 +7,14 @@ import EditarPedidoView from '@/views/EditarPedidoView.vue';
 
 const routes = [
   { path: '/login', component: LoginView },
-  { path: '/presupuestos', component: BudgetView },
+  { path: '/calculadora', component: BudgetView },
 
   // Estas rutas NO requieren login
   { path: '/foto-pedidos', component: FotoConfirmacionList },
   { path: '/foto-pedidos/nuevo', component: FotoConfirmacionForm },
   { path: '/foto-pedidos/editar', component: EditarPedidoView },
 
-  { path: '/', redirect: '/presupuestos' }
+  { path: '/', redirect: '/calculadora' }
 ];
 
 const router = createRouter({
