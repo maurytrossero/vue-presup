@@ -1,6 +1,6 @@
 <template>
   <div class="formulario-container">
-    <h2 class="titulo">Pedido de fotos para confirmaciones 2025</h2>
+    <h2 class="titulo">Pedido de fotos para comuniones 12/10/2025</h2>
 
     <form @submit.prevent="handleSubmit" class="formulario">
       <!-- Nombre -->

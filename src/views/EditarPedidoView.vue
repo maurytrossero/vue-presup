@@ -3,7 +3,7 @@
     <h2 class="titulo">Editar Pedido</h2>
 
     <div class="form-group">
-      <input v-model="whatsapp" placeholder="Ingresá tu WhatsApp" class="input" />
+      <input v-model="whatsapp" placeholder="Ingresá tu numero de WhatsApp que registraste con tu pedido" class="input" />
       <button @click="buscarPedido" class="boton">Buscar</button>
     </div>
 

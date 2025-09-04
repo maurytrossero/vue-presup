@@ -1,14 +1,24 @@
 <template>
   <div id="app">
     <nav class="navbar">
-      <div class="logo">Mi App</div>
-      <ul class="nav-links" :class="{ 'nav-active': menuOpen }">
-        <li><router-link to="/login">Login</router-link></li>
-        <li><router-link to="/presupuestos">Presupuestos</router-link></li>
-        <li><router-link to="/foto-pedidos">Foto Pedidos</router-link></li>
-        <li><router-link to="/foto-pedidos/nuevo">Nuevo Foto Pedido</router-link></li>
-        <li><router-link to="/foto-pedidos/editar">Editar Pedido</router-link></li>
-      </ul>
+      <div class="logo">Hace tu pedido online</div>
+        <ul class="nav-links" :class="{ 'nav-active': menuOpen }">
+          <li v-if="!isAuthenticated">
+            <router-link to="/login">Login</router-link>
+          </li>
+          <li v-else>
+            <a href="#" @click.prevent="logout">Logout</a>
+          </li>
+
+          <!-- Solo visible si el usuario está logueado -->
+          <li v-if="isAuthenticated">
+            <router-link to="/foto-pedidos">Listado de pedidos</router-link>
+          </li>
+
+          <li><router-link to="/foto-pedidos/nuevo">Nuevo Pedido de fotos</router-link></li>
+          <li><router-link to="/foto-pedidos/editar">Editar Pedido de fotos</router-link></li>
+        </ul>
+
       <div class="burger" @click="menuOpen = !menuOpen">
         <div></div>
         <div></div>
@@ -27,8 +37,22 @@ export default {
       menuOpen: false,
     };
   },
+  computed: {
+    isAuthenticated() {
+      // Suponiendo que guardas el token en localStorage
+      return localStorage.getItem('token') !== null;
+    }
+  },
+  methods: {
+    logout() {
+      localStorage.removeItem('token');
+      localStorage.removeItem('role'); // si guardas rol
+      this.$router.push('/login');
+    }
+  }
 };
 </script>
+
 
 <style scoped>
 .navbar {

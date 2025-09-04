@@ -1,7 +1,7 @@
 const { defineConfig } = require('@vue/cli-service');
 
 module.exports = defineConfig({
-  publicPath: './', // 👈 ESTA ES LA CLAVE para que los assets se carguen bien en producción
+  publicPath: '/', // ⬅️ clave para history mode + Express
   transpileDependencies: [
     'vue-router',
     'axios'

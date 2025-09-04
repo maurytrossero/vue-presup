@@ -10,7 +10,7 @@ const routes = [
   { path: '/calculadora', component: BudgetView },
 
   // Estas rutas NO requieren login
-  { path: '/foto-pedidos', component: FotoConfirmacionList },
+  { path: '/foto-pedidos', component: FotoConfirmacionList, meta: { requiresAuth: true } },
   { path: '/foto-pedidos/nuevo', component: FotoConfirmacionForm },
   { path: '/foto-pedidos/editar', component: EditarPedidoView },
 
@@ -29,21 +29,14 @@ console.log('[Rutas definidas]', routes);
 router.beforeEach((to, from, next) => {
   const isAuthenticated = localStorage.getItem('token') !== null;
 
-  console.log('[Navegación]');
-  console.log('→ Desde:', from.fullPath);
-  console.log('→ Hacia:', to.fullPath);
-  console.log('→ Requiere auth:', to.meta.requiresAuth === true);
-  console.log('→ Está autenticado:', isAuthenticated);
-
   if (to.path === '/login' && isAuthenticated) {
-    console.log('→ Ya autenticado, redirigiendo a /presupuestos');
-    next('/presupuestos');
+    next('/calculadora'); // o /presupuestos si quieres
   } else if (to.meta.requiresAuth && !isAuthenticated) {
-    console.log('→ No autenticado, redirigiendo a /login');
-    next('/login');
+    next('/login'); // bloquea rutas privadas si no hay token
   } else {
-    next();
+    next(); // deja pasar las rutas públicas
   }
 });
+
 
 export default router;
