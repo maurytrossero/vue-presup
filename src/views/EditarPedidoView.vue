@@ -14,14 +14,14 @@
       <div class="form-group">
         <label>Paquete seleccionado</label>
         <select v-model="nuevoPaquete" class="input">
-          <option value="1">1 foto - $4000</option>
-          <option value="2">2 fotos - $8000</option>
-          <option value="3">3 fotos - $12000</option>
+          <option value="1">1 foto - $4500</option>
+          <option value="2">2 fotos - $9000</option>
+          <option value="3">3 fotos - $13500</option>
         </select>
       </div>
 
       <div class="form-group">
-        <label>Fotos extra</label>
+        <label>Fotos extra, seran tomadas despues de la misa en el altar</label>
         <input type="number" min="0" v-model.number="nuevasExtras" class="input" />
       </div>
 
@@ -64,7 +64,7 @@ interface Pedido {
   comprobantes: { url: string; nombreArchivo: string }[];
 }
 const totalCalculado = computed(() => {
-  return (nuevoPaquete.value * 4000) + (nuevasExtras.value * 4000);
+  return (nuevoPaquete.value * 4500) + (nuevasExtras.value * 4500);
 });
 
 const whatsapp = ref('');

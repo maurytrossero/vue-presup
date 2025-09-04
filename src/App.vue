@@ -3,13 +3,6 @@
     <nav class="navbar">
       <div class="logo">Hace tu pedido online</div>
         <ul class="nav-links" :class="{ 'nav-active': menuOpen }">
-          <li v-if="!isAuthenticated">
-            <router-link to="/login">Login</router-link>
-          </li>
-          <li v-else>
-            <a href="#" @click.prevent="logout">Logout</a>
-          </li>
-
           <!-- Solo visible si el usuario está logueado -->
           <li v-if="isAuthenticated">
             <router-link to="/foto-pedidos">Listado de pedidos</router-link>
@@ -55,38 +48,53 @@ export default {
 
 
 <style scoped>
+/* Fuente base para la navbar */
+.navbar,
+.nav-links li a,
+.logo {
+  font-family: 'Inter', sans-serif; /* misma fuente que el formulario */
+}
+
+/* Barra principal */
 .navbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #333;
-  padding: 0 20px;
-  height: 50px;
+  background-color: #2563eb; /* color sólido */
+  padding: 0 1.5rem;
+  height: 60px;
   color: white;
 }
 
+/* Logo */
 .logo {
-  font-weight: bold;
-  font-size: 1.2em;
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: white;
 }
 
+/* Links de navegación */
 .nav-links {
   list-style: none;
   display: flex;
-  gap: 20px;
+  gap: 1.5rem;
+  align-items: center;
 }
 
 .nav-links li a {
   color: white;
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.4rem;
+  transition: background-color 0.2s;
 }
 
 .nav-links li a:hover {
-  color: #ddd;
+  background-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Burger menu - hidden en desktop */
+/* Burger menu */
 .burger {
   display: none;
   flex-direction: column;
@@ -95,24 +103,25 @@ export default {
 }
 
 .burger div {
-  width: 25px;
+  width: 28px;
   height: 3px;
   background-color: white;
+  border-radius: 2px;
 }
 
-/* Responsivo */
+/* Responsive */
 @media (max-width: 600px) {
   .nav-links {
     position: fixed;
     right: 0;
     height: 100vh;
     top: 0;
-    background-color: #333;
+    background-color: #2563eb; /* mismo color sólido */
     flex-direction: column;
-    width: 200px;
+    width: 220px;
     transform: translateX(100%);
     transition: transform 0.3s ease-in;
-    padding-top: 60px;
+    padding-top: 80px;
   }
 
   .nav-links.nav-active {
@@ -123,4 +132,5 @@ export default {
     display: flex;
   }
 }
+
 </style>

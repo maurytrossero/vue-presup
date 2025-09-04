@@ -37,10 +37,10 @@ export default defineComponent({
       if (username.value === 'admin' && password.value === 'admin') {
         isLoggedIn.value = true;
         localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('token', 'admin'); // ✅ esto es clave
+        localStorage.setItem('token', 'admin'); 
         emitLoginEvent(true);
-        console.log('Login exitoso. Redirigiendo a /presupuestos');
-        router.push('/presupuestos');
+        console.log('Login exitoso. Redirigiendo a /calculadora');
+        router.push('/calculadora'); // ✅ cambiar aquí
       } else {
         alert('Credenciales incorrectas');
       }
@@ -49,10 +49,11 @@ export default defineComponent({
     const logout = () => {
       isLoggedIn.value = false;
       localStorage.setItem('isLoggedIn', 'false');
-      localStorage.removeItem('token'); // ✅ también esto
+      localStorage.removeItem('token'); 
       emitLoginEvent(false);
-      router.push('/presupuestos');
+      router.push('/calculadora'); // ✅ cambiar aquí también
     };
+
 
 
     console.log('Estado inicial de login:', isLoggedIn.value);

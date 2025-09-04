@@ -28,9 +28,9 @@
         <label for="paquete">Paquete de fotos</label>
         <select id="paquete" v-model.number="paquete" required>
           <option disabled value="">Seleccionar</option>
-          <option :value="1">1 foto - $4000</option>
-          <option :value="2">2 fotos - $8000</option>
-          <option :value="3">3 fotos - $12000</option>
+          <option :value="1">1 foto - $4500</option>
+          <option :value="2">2 fotos - $9000</option>
+          <option :value="3">3 fotos - $13500</option>
         </select>
       </div>
 
@@ -94,7 +94,7 @@ const comprobanteFile = ref<File | null>(null);
 
 const total = computed(() => {
   if (!paquete.value) return 0;
-  return (paquete.value + extras.value) * 4000;
+  return (paquete.value + extras.value) * 4500;
 });
 
 const handleFileUpload = (event: Event) => {

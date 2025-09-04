@@ -29,12 +29,17 @@ console.log('[Rutas definidas]', routes);
 router.beforeEach((to, from, next) => {
   const isAuthenticated = localStorage.getItem('token') !== null;
 
+  // Si el usuario intenta ir a login y ya está autenticado, redirigir a /calculadora
   if (to.path === '/login' && isAuthenticated) {
-    next('/calculadora'); // o /presupuestos si quieres
-  } else if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login'); // bloquea rutas privadas si no hay token
-  } else {
-    next(); // deja pasar las rutas públicas
+    next('/calculadora');
+  } 
+  // Si la ruta requiere autenticación y no hay token, redirigir a login
+  else if (to.meta.requiresAuth && !isAuthenticated) {
+    next('/login');
+  } 
+  // En cualquier otro caso, permitir navegación
+  else {
+    next();
   }
 });
 
