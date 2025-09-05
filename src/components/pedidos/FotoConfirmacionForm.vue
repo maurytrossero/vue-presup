@@ -57,7 +57,7 @@
         <label>Transferencia a alias</label>
         <p class="alias">mauricio.mp.cor</p>
         <small class="alias-tip">
-          Transferí el total a este alias y luego subí el comprobante.
+          Transferí el total a este alias y luego subí el comprobante. También podes cargar el/los comprobante/s más tarde por medio de la opcion Editar pedido de fotos
         </small>
       </div>
 
