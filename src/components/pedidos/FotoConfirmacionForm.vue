@@ -11,7 +11,7 @@
 
       <!-- WhatsApp -->
       <div class="form-group">
-        <label for="whatsapp">WhatsApp del contacto, caracteristica sin el 0 y numero sin el 15</label>
+        <label for="whatsapp">WhatsApp del contacto, característica sin el 0 y número sin el 15</label>
         <input
           type="tel"
           id="whatsapp"
@@ -20,6 +20,7 @@
           placeholder="Ej: 3511234567"
           pattern="[0-9]*"
           inputmode="numeric"
+          @blur="checkWhatsappExistence"
         />
       </div>
 
@@ -36,7 +37,7 @@
 
       <!-- Fotos extra -->
       <div class="form-group">
-        <label for="extras">Fotos extra, seran tomadas despues de la misa en el altar</label>
+        <label for="extras">Fotos extra, serán tomadas después de la misa en el altar</label>
         <input
           type="number"
           id="extras"
@@ -57,26 +58,36 @@
         <label>Transferencia a alias</label>
         <p class="alias">mauricio.mp.cor</p>
         <small class="alias-tip">
-          Transferí el total a este alias y luego subí el comprobante. También podes cargar el/los comprobante/s más tarde por medio de la opcion Editar pedido de fotos
+          Transferí el total a este alias y luego subí una captura del/los comprobante/s. También podes cargarlos más tarde en la opción Editar pedido.
         </small>
       </div>
 
-    <!-- Comprobante -->
-    <div class="form-group">
-      <label for="comprobante">Comprobante de pago</label>
-      <label class="custom-file-upload">
-        <input type="file" @change="handleFileUpload" accept="image/*" />
-        <span>📎 Seleccionar archivo</span>
-      </label>
-      <p v-if="comprobanteFile" class="archivo-cargado">
-        Archivo: {{ comprobanteFile.name }}
-      </p>
-    </div>
+      <!-- Comprobante -->
+      <div class="form-group">
+        <label for="comprobante">Comprobante de pago</label><br />
+        <label class="custom-file-upload">
+          <input type="file" @change="handleFileUpload" accept="image/*" />
+          <span>📎 Seleccionar archivo</span>
+        </label>
+        <p v-if="comprobanteFile" class="archivo-cargado">
+          Archivo: {{ comprobanteFile.name }}
+        </p>
+      </div>
 
-
+      <!-- Mostrar comprobantes cargados -->
+      <div v-if="comprobantesCargados.length > 0" class="form-group">
+        <h4>Comprobantes cargados:</h4>
+        <ul>
+          <li v-for="c in comprobantesCargados" :key="c.nombreArchivo">
+            <a :href="c.url" target="_blank">{{ c.nombreArchivo }}</a>
+          </li>
+        </ul>
+      </div>
 
       <!-- Botón -->
-      <button type="submit" class="btn-enviar">Enviar pedido</button>
+      <button type="submit" class="btn-enviar" :disabled="loading">
+        {{ loading ? "Procesando..." : (isEditing ? "Guardar cambios" : "Enviar pedido") }}
+      </button>
     </form>
   </div>
 </template>
@@ -84,13 +95,23 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import Swal from 'sweetalert2';
-import { guardarPedido } from '@/services/fotoConfirmacionService';
+import { guardarPedido, getPedidoPorWhatsapp, actualizarPedido, agregarComprobante  // 👈 Faltaba este import
+ } from '@/services/fotoConfirmacionService';
+
+interface Comprobante {
+  url: string;
+  nombreArchivo: string;
+}
 
 const nombre = ref('');
 const whatsapp = ref('');
 const paquete = ref<number | ''>('');
 const extras = ref(0);
 const comprobanteFile = ref<File | null>(null);
+const comprobantesCargados = ref<Comprobante[]>([]);
+const loading = ref(false);
+const isEditing = ref(false);
+const editingPedidoId = ref<string | null>(null);
 
 const total = computed(() => {
   if (!paquete.value) return 0;
@@ -104,44 +125,90 @@ const handleFileUpload = (event: Event) => {
   }
 };
 
+const checkWhatsappExistence = async () => {
+  if (!/^\d{10,15}$/.test(whatsapp.value.trim())) return;
+
+  const existingPedido = await getPedidoPorWhatsapp(whatsapp.value.trim());
+  if (existingPedido) {
+    Swal.fire({
+      icon: 'info',
+      title: 'Pedido existente',
+      text: 'Ya existe un pedido con este número de WhatsApp. Podes editar tu pedido ingresando el número de whatsapp.',
+    });
+
+    isEditing.value = true;
+    editingPedidoId.value = existingPedido.id;
+
+    nombre.value = existingPedido.nombre || '';
+    paquete.value = existingPedido.paquete || '';
+    extras.value = existingPedido.fotosExtra || 0;
+
+    comprobantesCargados.value = existingPedido.comprobantes || [];
+  } else {
+    isEditing.value = false;
+    editingPedidoId.value = null;
+    comprobantesCargados.value = [];
+  }
+};
+
 const handleSubmit = async () => {
   if (!paquete.value) {
-    Swal.fire('Seleccioná un paquete', '', 'warning');
+    Swal.fire("Seleccioná un paquete", "", "warning");
     return;
   }
 
   if (!/^\d{10,15}$/.test(whatsapp.value.trim())) {
-    Swal.fire('WhatsApp inválido', 'Ingresá un número válido sin espacios, caracteristica sin 0 y número sin 15.', 'warning');
+    Swal.fire("WhatsApp inválido", "Ingresá un número válido sin espacios, característica sin 0 y número sin 15.", "warning");
     return;
   }
 
+  loading.value = true;
+
   try {
-    await guardarPedido({
-      nombre: nombre.value.trim(),
-      whatsapp: whatsapp.value.trim(),
-      paquete: paquete.value,
-      fotosExtra: extras.value,
-      total: total.value,
-      comprobanteFile: comprobanteFile.value,
-      estado: 'pendiente', 
-    });
+    if (isEditing.value && editingPedidoId.value) {
+      // Actualizar datos básicos
+      await actualizarPedido(editingPedidoId.value, {
+        nombre: nombre.value.trim(),
+        paquete: paquete.value,
+        fotosExtra: extras.value,
+        total: total.value,
+      });
 
-    Swal.fire({
-      title: 'Pedido enviado 🎉',
-      text: 'Tu pedido fue registrado correctamente.',
-      icon: 'success',
-      confirmButtonText: 'Aceptar'
-    });
+      // Agregar comprobante nuevo si lo hay
+      if (comprobanteFile.value) {
+        await agregarComprobante(editingPedidoId.value, comprobanteFile.value);
+      }
 
-    // Limpiar formulario
+      Swal.fire("Pedido actualizado 🎉", "Tu pedido fue actualizado correctamente.", "success");
+    } else {
+      // Crear pedido nuevo y delegar comprobante al service
+      await guardarPedido({
+        nombre: nombre.value.trim(),
+        whatsapp: whatsapp.value.trim(),
+        paquete: paquete.value,
+        fotosExtra: extras.value,
+        total: total.value,
+        comprobanteFile: comprobanteFile.value || undefined,
+      });
+
+      Swal.fire("Pedido enviado 🎉", "Tu pedido fue registrado correctamente.", "success");
+    }
+
+    // Resetear formulario
     nombre.value = '';
     whatsapp.value = '';
     paquete.value = '';
     extras.value = 0;
     comprobanteFile.value = null;
+    comprobantesCargados.value = [];
+    isEditing.value = false;
+    editingPedidoId.value = null;
+
   } catch (error) {
-    Swal.fire('Error', 'No se pudo guardar el pedido.', 'error');
-    console.error('Error guardando pedido:', error);
+    Swal.fire("Error", "No se pudo guardar el pedido.", "error");
+    console.error(error);
+  } finally {
+    loading.value = false;
   }
 };
 

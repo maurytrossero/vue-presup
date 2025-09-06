@@ -14,7 +14,6 @@
       Enviar mensaje a todos 📢
     </button>
 
-
     <h2 class="titulo-pedidos">Pedidos de Fotos de Confirmación</h2>
 
     <div v-if="loading" class="mensaje-cargando">Cargando pedidos...</div>
@@ -27,9 +26,7 @@
         class="tarjeta-pedido"
       >
         <div class="info-pedido">
-          <p>
-            <strong>Nombre:</strong> {{ pedido.nombre }}
-          </p>
+          <p><strong>Nombre:</strong> {{ pedido.nombre }}</p>
           <p>
             <strong>WhatsApp:</strong> {{ pedido.whatsapp }}
             <a
@@ -46,13 +43,29 @@
             <strong>Paquete:</strong> {{ pedido.paquete }} foto(s) oficiales + {{ pedido.fotosExtra }} extra(s)
           </p>
           <p><strong>Total:</strong> ${{ pedido.total }}</p>
-          <p v-if="pedido.comprobanteURL">
-            <strong>Comprobante:</strong>
-            <a :href="pedido.comprobanteURL" target="_blank" class="link-comprobante">Ver imagen</a>
-          </p>
-          <p v-else><strong>Comprobante:</strong> No cargado</p>
+
+          <!-- Mostrar comprobantes -->
+          <div class="comprobantes-section">
+            <p><strong>Comprobantes:</strong></p>
+            <div v-if="pedido.comprobantes?.length > 0">
+              <ul class="comprobantes-lista">
+                <li v-for="c in pedido.comprobantes" :key="c.nombreArchivo">
+                  <a :href="c.url" target="_blank" class="link-comprobante">
+                    {{ c.nombreArchivo }}
+                  </a>
+                  <div class="comprobante-preview">
+                    <img :src="c.url" alt="Comprobante" class="comprobante-img" />
+                  </div>
+                </li>
+              </ul>
+            </div>
+            <p v-else>No cargados</p>
+          </div>
+
+
           <p>
-            <strong>Estado:</strong> <span :class="estadoColor(pedido.estado)">{{ pedido.estado }}</span>
+            <strong>Estado:</strong>
+            <span :class="estadoColor(pedido.estado)">{{ pedido.estado }}</span>
           </p>
           <p class="fecha-pedido">
             Fecha: {{ pedido.createdAt?.toDate().toLocaleString() || 'sin fecha' }}
@@ -75,11 +88,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { getPedidos, aprobarEstadoPedido } from '@/services/fotoConfirmacionService';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { aprobarEstadoPedido, escucharPedidos } from '@/services/fotoConfirmacionService';
+
 const mensajeMasivo = ref('Hola, te confirmamos que recibimos tu pedido de fotos de confirmación. Muchas gracias 🙌');
-
-
 const pedidos = ref<any[]>([]);
 const loading = ref(true);
 
@@ -87,33 +99,21 @@ function estadoColor(estado: string) {
   return estado === 'aprobado' ? 'estado-aprobado' : 'estado-pendiente';
 }
 
-async function cargarPedidos() {
-  loading.value = true;
-  pedidos.value = await getPedidos();
-  loading.value = false;
-}
-
 async function aprobarPedido(id: string) {
   await aprobarEstadoPedido(id);
-  await cargarPedidos(); // refrescar
 }
 
-// Función para generar link WhatsApp con mensaje predefinido
-function whatsappLink(whatsapp: string, nombre: string) {
-  // Limpiar el número, eliminar espacios, signos y + para evitar errores
-  const telefono = whatsapp.replace(/[^0-9]/g, '');
-  const mensaje = `Hola, , te confirmamos que recibimos tu pedido de fotos para ${nombre} de connfirmaciones. Estamos procesándolo.`;
-  // encodeURIComponent para el texto del mensaje
+function whatsappLink(whatsapp: string | undefined, nombre: string) {
+  const telefono = (whatsapp || '').replace(/[^0-9]/g, '');
+  const mensaje = `Hola, te confirmamos que recibimos tu pedido de fotos para ${nombre} de confirmaciones. Estamos procesándolo.`;
   return `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
 }
-
-onMounted(cargarPedidos);
 
 function enviarMensajesMasivos() {
   if (!mensajeMasivo.value.trim()) return;
 
   pedidos.value.forEach(pedido => {
-    const telefono = pedido.whatsapp?.replace(/[^0-9]/g, '');
+    const telefono = (pedido.whatsapp || '').replace(/[^0-9]/g, '');
     if (telefono) {
       const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensajeMasivo.value)}`;
       window.open(url, '_blank');
@@ -121,9 +121,20 @@ function enviarMensajesMasivos() {
   });
 }
 
+// Suscripción en tiempo real
+let unsubscribe: (() => void) | null = null;
 
+onMounted(() => {
+  unsubscribe = escucharPedidos((data) => {
+    pedidos.value = data;
+    loading.value = false;
+  });
+});
+
+onUnmounted(() => {
+  if (unsubscribe) unsubscribe();
+});
 </script>
-
 
 <style scoped>
 .contenedor-pedidos {
@@ -320,4 +331,27 @@ function enviarMensajesMasivos() {
   box-shadow: 0 6px 14px rgba(5, 150, 105, 0.5);
 }
 
+.comprobantes-section {
+  margin-top: 0.5rem;
+}
+
+.comprobantes-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+}
+
+.comprobantes-lista li {
+  margin-bottom: 0.8rem;
+}
+
+.comprobante-preview {
+  margin-top: 5px;
+}
+
+.comprobante-img {
+  max-width: 180px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
 </style>

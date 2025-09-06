@@ -2,8 +2,13 @@
   <div class="editar-pedido-container">
     <h2 class="titulo">Editar Pedido</h2>
 
+    <!-- Mensaje de notificación -->
+    <div v-if="mensaje" :class="['mensaje', tipoMensaje]">
+      {{ mensaje }}
+    </div>
+
     <div class="form-group">
-      <input v-model="whatsapp" placeholder="Ingresá tu numero de WhatsApp que registraste con tu pedido" class="input" />
+      <input v-model="whatsapp" placeholder="Ingresá tu número de WhatsApp que registraste con tu pedido" class="input" />
       <button @click="buscarPedido" class="boton">Buscar</button>
     </div>
 
@@ -21,7 +26,7 @@
       </div>
 
       <div class="form-group">
-        <label>Fotos extra, seran tomadas despues de la misa en el altar</label>
+        <label>Fotos extra, serán tomadas después de la misa en el altar</label>
         <input type="number" min="0" v-model.number="nuevasExtras" class="input" />
       </div>
 
@@ -29,18 +34,26 @@
 
       <p><strong>Total:</strong> ${{ totalCalculado }}</p>
 
-<div class="form-group">
-  <label class="custom-file-upload">
-    <input type="file" @change="onFileChange" />
-    📎 Seleccionar archivo
-  </label>
-</div>
-
+      <div class="form-group">
+        <label class="custom-file-upload">
+          <input type="file" @change="onFileChange" accept="image/*" />
+          📎 Seleccionar archivo
+        </label>
+        <button v-if="archivo" @click="subirComprobante" class="boton secundario">
+          Subir captura de comprobante/s
+        </button>
+      </div>
 
       <h4>Comprobantes cargados:</h4>
       <ul class="comprobantes-lista">
         <li v-for="c in pedido.comprobantes" :key="c.nombreArchivo">
           <a :href="c.url" target="_blank">{{ c.nombreArchivo }}</a>
+          <div class="comprobante-preview">
+            <img :src="c.url" alt="Comprobante" class="comprobante-img" />
+          </div>
+          <button @click="eliminarComprobanteHandler(c)" class="boton eliminar">
+            ❌ Eliminar
+          </button>
         </li>
       </ul>
     </div>
@@ -48,12 +61,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onUnmounted } from 'vue';
 import {
   getPedidoPorWhatsapp,
   agregarComprobante,
-  actualizarPedido
+  actualizarPedido,
+  eliminarComprobante
 } from '@/services/fotoConfirmacionService';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/services/firebase';
 
 interface Pedido {
   id: string;
@@ -62,10 +78,8 @@ interface Pedido {
   fotosExtra: number;
   total: number;
   comprobantes: { url: string; nombreArchivo: string }[];
+  estado?: string;
 }
-const totalCalculado = computed(() => {
-  return (nuevoPaquete.value * 4500) + (nuevasExtras.value * 4500);
-});
 
 const whatsapp = ref('');
 const pedido = ref<Pedido | null>(null);
@@ -74,30 +88,50 @@ const archivo = ref<File | null>(null);
 const nuevoPaquete = ref<number>(1);
 const nuevasExtras = ref<number>(0);
 
+const mensaje = ref('');
+const tipoMensaje = ref<'exito' | 'error'>('exito');
+
+const mostrarMensaje = (texto: string, tipo: 'exito' | 'error' = 'exito') => {
+  mensaje.value = texto;
+  tipoMensaje.value = tipo;
+  setTimeout(() => { mensaje.value = ''; }, 3000);
+};
+
+const totalCalculado = computed(() => {
+  return nuevoPaquete.value * 4500 + nuevasExtras.value * 4500;
+});
+
 const safeNumber = (value: any, defaultValue = 0): number => {
   if (typeof value === 'number') return value;
   if (typeof value === 'string' && !isNaN(Number(value))) return Number(value);
   return defaultValue;
 };
 
+let unsubscribe: (() => void) | null = null;
+
 const buscarPedido = async () => {
   const resultado = await getPedidoPorWhatsapp(whatsapp.value.trim());
-  console.log('resultado:', resultado);
-
   if (resultado) {
-    pedido.value = {
-      id: resultado.id,
-      nombre: resultado.nombre ?? '',
-      paquete: safeNumber(resultado.paquete, 1),
-      fotosExtra: safeNumber(resultado.fotosExtra, 0),
-      total: safeNumber(resultado.total, 0),
-      comprobantes: resultado.comprobantes ?? []
-    };
-
-    nuevoPaquete.value = safeNumber(resultado.paquete, 1);
-    nuevasExtras.value = safeNumber(resultado.fotosExtra, 0);
+    if (unsubscribe) unsubscribe();
+    const pedidoRef = doc(db, 'fotoPedidos', resultado.id);
+    unsubscribe = onSnapshot(pedidoRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        pedido.value = {
+          id: snap.id,
+          nombre: data.nombre ?? '',
+          paquete: safeNumber(data.paquete, 1),
+          fotosExtra: safeNumber(data.fotosExtra, 0),
+          total: safeNumber(data.total, 0),
+          comprobantes: data.comprobantes ?? [],
+          estado: data.estado ?? 'pendiente'
+        };
+        nuevoPaquete.value = safeNumber(data.paquete, 1);
+        nuevasExtras.value = safeNumber(data.fotosExtra, 0);
+      }
+    });
   } else {
-    alert('Pedido no encontrado');
+    mostrarMensaje('Pedido no encontrado ❌', 'error');
     pedido.value = null;
   }
 };
@@ -110,8 +144,8 @@ const onFileChange = (e: Event) => {
 const subirComprobante = async () => {
   if (!archivo.value || !pedido.value) return;
   await agregarComprobante(pedido.value.id, archivo.value);
-  alert('Comprobante agregado');
-  buscarPedido();
+  mostrarMensaje('Comprobante agregado ✅');
+  archivo.value = null;
 };
 
 const guardarCambios = async () => {
@@ -121,7 +155,7 @@ const guardarCambios = async () => {
   const extrasToSave = Number(nuevasExtras.value);
 
   if (isNaN(paqueteToSave) || isNaN(extrasToSave)) {
-    alert('Paquete o fotos extra inválidos');
+    mostrarMensaje('Paquete o fotos extra inválidos ❌', 'error');
     return;
   }
 
@@ -129,10 +163,21 @@ const guardarCambios = async () => {
     paquete: paqueteToSave,
     fotosExtra: extrasToSave
   });
-
-  alert('Datos actualizados');
-  buscarPedido();
+  mostrarMensaje('Datos actualizados ✅');
 };
+
+const eliminarComprobanteHandler = async (c: any) => {
+  if (!pedido.value) return;
+  const confirmacion = confirm('¿Seguro que deseas eliminar este comprobante?');
+  if (!confirmacion) return;
+
+  await eliminarComprobante(pedido.value.id, c);
+  mostrarMensaje('Comprobante eliminado ✅');
+};
+
+onUnmounted(() => {
+  if (unsubscribe) unsubscribe();
+});
 </script>
 
 <style scoped>
@@ -260,6 +305,51 @@ select:focus {
   .titulo {
     font-size: 1.6rem;
   }
+}
+.comprobantes-lista {
+  list-style: none;
+  padding: 0;
+}
+
+.comprobante-preview {
+  margin-top: 5px;
+}
+
+.comprobante-img {
+  max-width: 200px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}.mensaje {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding: 0.7rem;
+  border-radius: 0.5rem;
+  font-weight: 600;
+}
+
+.mensaje.exito {
+  background-color: #10b981;
+  color: white;
+}
+
+.mensaje.error {
+  background-color: #ef4444;
+  color: white;
+}
+
+.boton.eliminar {
+  background-color: #ef4444;
+}
+
+.boton.eliminar:hover {
+  background-color: #dc2626;
+}
+.boton.eliminar {
+  background-color: #ef4444;
+}
+
+.boton.eliminar:hover {
+  background-color: #dc2626;
 }
 </style>
 
