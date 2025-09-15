@@ -10,6 +10,11 @@
           <li v-if="isAuthenticated">
             <router-link to="/foto-pedidos" @click="menuOpen = false">Listado de pedidos</router-link>
           </li>
+          <li v-if="isAuthenticated">
+            <router-link to="/foto-pedidos/subir" @click="menuOpen = false">
+              Subir Fotos
+            </router-link>
+          </li>
 
           <li>
             <router-link to="/foto-pedidos/nuevo" @click="menuOpen = false">Nuevo Pedido de fotos</router-link>
@@ -17,9 +22,13 @@
           <li>
             <router-link to="/foto-pedidos/editar" @click="menuOpen = false">Editar Pedido de fotos</router-link>
           </li>
+          <li v-if="isAuthenticated">
+          <router-link to="/foto-pedidos/seleccionar" @click="menuOpen = false">
+            Seleccionar Fotos
+          </router-link>
+        </li>
+
         </ul>
-
-
 
       <div class="burger" @click="menuOpen = !menuOpen">
         <div></div>

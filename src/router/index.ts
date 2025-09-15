@@ -4,6 +4,8 @@ import BudgetView from '@/views/BudgetView.vue';
 import FotoConfirmacionForm from '@/components/pedidos/FotoConfirmacionForm.vue';
 import FotoConfirmacionList from '@/components/pedidos/FotoConfirmacionList.vue';
 import EditarPedidoView from '@/views/EditarPedidoView.vue';
+import SeleccionarFotosView from '@/views/SeleccionarFotosView.vue';
+import FotoSubida from '@/components/pedidos/FotoSubida.vue';
 
 const routes = [
   { path: '/login', component: LoginView },
@@ -13,6 +15,8 @@ const routes = [
   { path: '/foto-pedidos', component: FotoConfirmacionList, meta: { requiresAuth: true } },
   { path: '/foto-pedidos/nuevo', component: FotoConfirmacionForm },
   { path: '/foto-pedidos/editar', component: EditarPedidoView },
+  {  path: '/foto-pedidos/seleccionar',  name: 'SeleccionarFotos',  component: SeleccionarFotosView},
+  { path: '/foto-pedidos/subir', name: 'SubirFotos', component: FotoSubida, meta: { requiresAuth: true, requiresAdmin: true } },
 
   { path: '/', redirect: '/calculadora' }
 ];

@@ -14,7 +14,7 @@
       Enviar mensaje a todos 📢
     </button>
 
-    <h2 class="titulo-pedidos">Pedidos de Fotos de Confirmación</h2>
+    <h2 class="titulo-pedidos">Pedidos de Fotos de Comuniones 12/10/2025</h2>
 
     <div v-if="loading" class="mensaje-cargando">Cargando pedidos...</div>
     <div v-else-if="pedidos.length === 0" class="mensaje-vacio">No hay pedidos registrados.</div>

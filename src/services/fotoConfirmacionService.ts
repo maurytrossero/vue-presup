@@ -1,3 +1,4 @@
+// src/services/fotoConfirmacionService.ts
 import { db } from '@/services/firebase';
 import {
   collection,
@@ -31,6 +32,7 @@ export interface Pedido {
   fotosExtra: number;
   total: number;
   comprobantes: Comprobante[];
+  seleccionadas?: string[]; // ahora opcional
   estado?: string;
   createdAt?: any; // Firestore timestamp
 }
@@ -53,16 +55,15 @@ export async function uploadComprobanteToCloudinary(file: File): Promise<Comprob
   const data = await res.json();
   return {
     url: data.secure_url,
-    nombreArchivo: file.name
+    nombreArchivo: file.name,
   };
 }
 
 // ---------------------------
 // Crear pedido
 // ---------------------------
-// guardarPedido ya maneja comprobanteFile
 export async function guardarPedido(
-  data: Omit<Pedido, 'id' | 'comprobantes'> & { comprobanteFile?: File }
+  data: Omit<Pedido, 'id' | 'comprobantes' | 'seleccionadas'> & { comprobanteFile?: File }
 ) {
   const { comprobanteFile, ...pedidoData } = data;
   const pedidosRef = collection(db, 'fotoPedidos');
@@ -71,7 +72,8 @@ export async function guardarPedido(
     ...pedidoData,
     estado: 'pendiente',
     comprobantes: [],
-    createdAt: serverTimestamp()
+    seleccionadas: [],
+    createdAt: serverTimestamp(),
   });
 
   if (comprobanteFile) {
@@ -82,23 +84,20 @@ export async function guardarPedido(
   return docRef.id;
 }
 
-
 // ---------------------------
 // Obtener todos los pedidos
 // ---------------------------
-export async function getPedidos() {
+export async function getPedidos(): Promise<Pedido[]> {
   const snapshot = await getDocs(collection(db, "fotoPedidos"));
 
   const pedidos = snapshot.docs.map(doc => {
     const data = doc.data();
-    console.log("🔥 Pedido recuperado:", doc.id, data);
     return {
       id: doc.id,
       ...data,
-    };
+    } as Pedido;
   });
 
-  console.log("📦 Todos los pedidos:", pedidos);
   return pedidos;
 }
 
@@ -137,12 +136,13 @@ export async function aprobarEstadoPedido(id: string): Promise<void> {
 // ---------------------------
 // Actualizar datos del pedido
 // ---------------------------
-interface ActualizarPedido {
+export interface ActualizarPedido {
   nombre?: string;
   paquete?: number;
   fotosExtra?: number;
   total?: number;
   comprobantes?: Comprobante[];
+  seleccionadas?: string[]; // se puede actualizar ahora
 }
 
 export async function actualizarPedido(id: string, data: ActualizarPedido) {
@@ -156,12 +156,15 @@ export async function actualizarPedido(id: string, data: ActualizarPedido) {
     }
   }
 
-  // Forzar tipo any para evitar error TS en producción
   if (Object.keys(datosValidos).length > 0) {
     await updateDoc(pedidoRef, datosValidos as any);
   }
 }
-export function escucharPedidos(callback: (pedidos: any[]) => void) {
+
+// ---------------------------
+// Escuchar pedidos en tiempo real
+// ---------------------------
+export function escucharPedidos(callback: (pedidos: Pedido[]) => void) {
   const pedidosRef = collection(db, "fotoPedidos");
   const q = query(pedidosRef, orderBy("createdAt", "desc"));
 
@@ -169,11 +172,15 @@ export function escucharPedidos(callback: (pedidos: any[]) => void) {
     const pedidos = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    }));
+    })) as Pedido[];
     callback(pedidos);
   });
 }
-export const eliminarComprobante = async (pedidoId: string, comprobante: any) => {
+
+// ---------------------------
+// Eliminar comprobante
+// ---------------------------
+export const eliminarComprobante = async (pedidoId: string, comprobante: Comprobante) => {
   await updateDoc(doc(db, 'fotoPedidos', pedidoId), {
     comprobantes: arrayRemove(comprobante),
   });
