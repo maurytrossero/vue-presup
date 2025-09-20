@@ -7,56 +7,74 @@
 
     <!-- Buscar pedido -->
     <div class="form-group">
-      <input v-model="whatsapp" placeholder="Ingresá tu número de WhatsApp registrado" class="input" />
+      <input
+        v-model="whatsapp"
+        placeholder="Ingresá tu número de WhatsApp registrado"
+        class="input"
+      />
       <button @click="buscarPedido" class="boton">Buscar</button>
     </div>
 
     <!-- Pedido encontrado -->
     <div v-if="pedido" class="pedido-card">
       <p><strong>Nombre:</strong> {{ pedido.nombre }}</p>
+      <p><strong>Estado:</strong> {{ pedido.estado }}</p>
       <p><strong>Fotos permitidas:</strong> {{ maxFotos }}</p>
       <p><strong>Seleccionadas:</strong> {{ seleccionadas.length }} / {{ maxFotos }}</p>
 
-      <!-- Fotos seleccionadas -->
-      <div v-if="seleccionadas.length" class="seleccionadas">
-        <h3>Fotos Seleccionadas</h3>
-        <div class="separador"></div>
-        <div class="seleccionadas-grid">
-          <div v-for="url in seleccionadas" :key="url" class="foto-item-fija">
-            <img :src="url" class="foto-mini" />
-            <button class="boton eliminar" @click="eliminarSeleccion(url)">✕</button>
-          </div>
-        </div>
+      <!-- Mostrar aviso si el pedido no está aprobado -->
+      <div v-if="pedido.estado !== 'aprobado'" class="mensaje info">
+        Tu pedido está pendiente de pago 💳.  
+        Primero debés abonarlo para poder seleccionar tus fotos.
       </div>
 
-      <!-- Galería completa -->
-      <div class="galeria-container">
-        <h3>Elegí tus fotos de la galería para revelar</h3>
-        <div class="separador"></div>
-        <div class="galeria">
-          <div
-            v-for="foto in fotosDisponibles"
-            :key="foto.url"
-            class="foto-item"
-          >
-            <img
-              :src="foto.pixelada"
-              :alt="foto.nombre"
-              class="foto-mini"
-              @click="toggleSeleccion(foto.url)"
-              :class="{ activa: seleccionadas.includes(foto.url) }"
-            />
+      <!-- Bloquear galería si no está aprobado -->
+      <template v-else>
+        <!-- Fotos seleccionadas -->
+        <div v-if="seleccionadas.length" class="seleccionadas">
+          <h3>Fotos Seleccionadas</h3>
+          <div class="separador"></div>
+          <div class="seleccionadas-grid">
+            <div
+              v-for="url in seleccionadas"
+              :key="url"
+              class="foto-item-fija"
+            >
+              <img :src="url" class="foto-mini" />
+              <button class="boton eliminar" @click="eliminarSeleccion(url)">✕</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <button
-        @click="guardarSeleccion"
-        class="boton secundario"
-        :disabled="seleccionadas.length === 0"
-      >
-        Guardar Selección
-      </button>
+        <!-- Galería completa -->
+        <div class="galeria-container">
+          <h3>Elegí tus fotos de la galería para revelar</h3>
+          <div class="separador"></div>
+          <div class="galeria">
+            <div
+              v-for="foto in fotosDisponibles"
+              :key="foto.url"
+              class="foto-item"
+            >
+              <img
+                :src="foto.pixelada"
+                :alt="foto.nombre"
+                class="foto-mini"
+                @click="toggleSeleccion(foto.url)"
+                :class="{ activa: seleccionadas.includes(foto.url) }"
+              />
+            </div>
+          </div>
+        </div>
+
+        <button
+          @click="guardarSeleccion"
+          class="boton secundario"
+          :disabled="seleccionadas.length === 0"
+        >
+          Guardar Selección
+        </button>
+      </template>
     </div>
   </div>
 </template>
@@ -73,6 +91,7 @@ interface Pedido {
   paquete: number;
   fotosExtra: number;
   seleccionadas?: string[];
+  estado?: string; // 👈 ahora puede ser string o undefined
 }
 
 const whatsapp = ref('');
@@ -81,17 +100,19 @@ const seleccionadas = ref<string[]>([]);
 const fotosDisponibles = ref<{url: string; pixelada: string; nombre: string}[]>([]);
 
 const mensaje = ref('');
-const tipoMensaje = ref<'exito' | 'error'>('exito');
+const tipoMensaje = ref<'exito' | 'error' | 'info'>('exito');
 
 const maxFotos = computed(() => {
   if (!pedido.value) return 0;
   return (pedido.value.paquete ?? 0) + (pedido.value.fotosExtra ?? 0);
 });
 
-const mostrarMensaje = (texto: string, tipo: 'exito'|'error'='exito') => {
+const estadoPedido = computed(() => pedido.value?.estado ?? 'pendiente');
+
+const mostrarMensaje = (texto: string, tipo: 'exito'|'error'|'info'='exito') => {
   mensaje.value = texto;
   tipoMensaje.value = tipo;
-  setTimeout(() => mensaje.value = '', 3000);
+  setTimeout(() => mensaje.value = '', 4000);
 };
 
 const buscarPedido = async () => {
@@ -101,17 +122,19 @@ const buscarPedido = async () => {
     pedido.value = null;
     return;
   }
+
   pedido.value = resultado;
-
-  // Traemos las fotos desde Firestore
-  const fotos = await getFotosDisponibles("evento123"); // reemplazar por evento real
-  fotosDisponibles.value = fotos.map(f => ({
-    url: f.url,
-    pixelada: getPixelatedUrl(f.url, 20), // pixelado moderado, cambiar valor si querés menos/más
-    nombre: f.nombre
-  }));
-
   seleccionadas.value = resultado.seleccionadas ?? [];
+
+  // Solo cargar fotos si el pedido está aprobado
+  if (resultado.estado === 'aprobado') {
+    const fotos = await getFotosDisponibles("evento123"); // ⚠️ reemplazar por evento real
+    fotosDisponibles.value = fotos.map(f => ({
+      url: f.url,
+      pixelada: getPixelatedUrl(f.url, 20),
+      nombre: f.nombre
+    }));
+  }
 };
 
 const toggleSeleccion = (url: string) => {
@@ -138,6 +161,7 @@ const guardarSeleccion = async () => {
   mostrarMensaje('Selección guardada ✅');
 };
 </script>
+
 
 <style scoped>
 * {
