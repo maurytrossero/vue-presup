@@ -18,13 +18,13 @@
     <!-- Pedido encontrado -->
     <div v-if="pedido" class="pedido-card">
       <p><strong>Nombre:</strong> {{ pedido.nombre }}</p>
-      <p><strong>Estado:</strong> {{ pedido.estado }}</p>
+      <p><strong>Estado:</strong> {{ pedido.estado ?? 'pendiente' }}</p>
       <p><strong>Fotos permitidas:</strong> {{ maxFotos }}</p>
       <p><strong>Seleccionadas:</strong> {{ seleccionadas.length }} / {{ maxFotos }}</p>
 
       <!-- Mostrar aviso si el pedido no está aprobado -->
       <div v-if="pedido.estado !== 'aprobado'" class="mensaje info">
-        Tu pedido está pendiente de pago 💳.  
+        Tu pedido está pendiente de pago 💳.
         Primero debés abonarlo para poder seleccionar tus fotos.
       </div>
 
@@ -41,7 +41,9 @@
               class="foto-item-fija"
             >
               <img :src="url" class="foto-mini" />
-              <button class="boton eliminar" @click="eliminarSeleccion(url)">✕</button>
+              <!-- Lupa para ampliar la foto seleccionada -->
+              <button class="btn-ampliar-peq" @click.stop="abrirAmpliadaPorUrl(url)" title="Ver en grande">🔍</button>
+              <button class="boton eliminar" @click="eliminarSeleccion(url)" title="Quitar selección">✕</button>
             </div>
           </div>
         </div>
@@ -52,17 +54,20 @@
           <div class="separador"></div>
           <div class="galeria">
             <div
-              v-for="foto in fotosDisponibles"
+              v-for="(foto, index) in fotosDisponibles"
               :key="foto.url"
-              class="foto-item"
+              class="foto-wrapper"
             >
+              <!-- Clic simple = seleccionar/deseleccionar -->
               <img
-                :src="foto.pixelada"
+                :src="foto.url"
                 :alt="foto.nombre"
                 class="foto-mini"
                 @click="toggleSeleccion(foto.url)"
                 :class="{ activa: seleccionadas.includes(foto.url) }"
               />
+              <!-- Botón lupa para ampliar -->
+              <button class="btn-ampliar" @click.stop="abrirAmpliada(index)" title="Ver en grande">🔍</button>
             </div>
           </div>
         </div>
@@ -76,13 +81,52 @@
         </button>
       </template>
     </div>
+    <!-- Modal ampliado con navegación -->
+    <transition name="fade-zoom">
+      <div
+        v-if="fotoAmpliadaIndex !== null"
+        class="modal"
+        @click.self="cerrarAmpliada"
+        role="dialog"
+        aria-modal="true"
+      >
+        <button class="cerrar" @click="cerrarAmpliada" aria-label="Cerrar">✕</button>
+
+        <button
+          class="nav izquierda"
+          @click.stop="anteriorFoto"
+          :disabled="!tieneFotos"
+          aria-label="Anterior"
+        >⬅</button>
+
+        <img
+          v-if="tieneFotos && fotoAmpliadaIndex !== null"
+          :src="fotosDisponibles[fotoAmpliadaIndex].url"
+          :alt="fotosDisponibles[fotoAmpliadaIndex].nombre"
+          class="foto-grande"
+        />
+
+        <button
+          class="nav derecha"
+          @click.stop="siguienteFoto"
+          :disabled="!tieneFotos"
+          aria-label="Siguiente"
+        >➡</button>
+
+        <button
+          class="boton seleccionar"
+          @click="toggleSeleccion(fotoActualUrl)"
+        >
+          {{ fotoActualUrl && seleccionadas.includes(fotoActualUrl) ? 'Quitar de selección' : 'Seleccionar esta foto' }}
+        </button>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { getPedidoPorWhatsapp, actualizarPedido } from '@/services/fotoConfirmacionService';
-import { getPixelatedUrl } from '@/services/cloudinaryService';
 import { getFotosDisponibles } from '@/services/fotoService';
 
 interface Pedido {
@@ -91,28 +135,34 @@ interface Pedido {
   paquete: number;
   fotosExtra: number;
   seleccionadas?: string[];
-  estado?: string; // 👈 ahora puede ser string o undefined
+  estado?: string;
 }
 
 const whatsapp = ref('');
-const pedido = ref<Pedido|null>(null);
+const pedido = ref<Pedido | null>(null);
 const seleccionadas = ref<string[]>([]);
-const fotosDisponibles = ref<{url: string; pixelada: string; nombre: string}[]>([]);
+const fotosDisponibles = ref<{ url: string; nombre: string }[]>([]);
 
 const mensaje = ref('');
 const tipoMensaje = ref<'exito' | 'error' | 'info'>('exito');
 
+// índice de la foto ampliada en fotosDisponibles (null = modal cerrado)
+const fotoAmpliadaIndex = ref<number | null>(null);
+
+// computed
 const maxFotos = computed(() => {
   if (!pedido.value) return 0;
   return (pedido.value.paquete ?? 0) + (pedido.value.fotosExtra ?? 0);
 });
+const tieneFotos = computed(() => fotosDisponibles.value.length > 0);
+const fotoActualUrl = computed(() => {
+  return fotoAmpliadaIndex.value !== null ? fotosDisponibles.value[fotoAmpliadaIndex.value]?.url ?? null : null;
+});
 
-const estadoPedido = computed(() => pedido.value?.estado ?? 'pendiente');
-
-const mostrarMensaje = (texto: string, tipo: 'exito'|'error'|'info'='exito') => {
+const mostrarMensaje = (texto: string, tipo: 'exito' | 'error' | 'info' = 'exito') => {
   mensaje.value = texto;
   tipoMensaje.value = tipo;
-  setTimeout(() => mensaje.value = '', 4000);
+  setTimeout(() => (mensaje.value = ''), 4000);
 };
 
 const buscarPedido = async () => {
@@ -120,48 +170,87 @@ const buscarPedido = async () => {
   if (!resultado) {
     mostrarMensaje('Pedido no encontrado ❌', 'error');
     pedido.value = null;
+    fotosDisponibles.value = [];
+    seleccionadas.value = [];
     return;
   }
 
   pedido.value = resultado;
   seleccionadas.value = resultado.seleccionadas ?? [];
+  fotosDisponibles.value = [];
 
   // Solo cargar fotos si el pedido está aprobado
   if (resultado.estado === 'aprobado') {
-    const fotos = await getFotosDisponibles("evento123"); // ⚠️ reemplazar por evento real
-    fotosDisponibles.value = fotos.map(f => ({
-      url: f.url,
-      pixelada: getPixelatedUrl(f.url, 20),
-      nombre: f.nombre
-    }));
+    const fotos = await getFotosDisponibles('evento123'); // reemplazar por evento real
+    fotosDisponibles.value = fotos.map((f) => ({ url: f.url, nombre: f.nombre }));
   }
 };
 
-const toggleSeleccion = (url: string) => {
+// seleccion / deselect
+const toggleSeleccion = (url: string | null) => {
+  if (!url) return;
   if (seleccionadas.value.includes(url)) {
-    seleccionadas.value = seleccionadas.value.filter(f => f !== url);
+    seleccionadas.value = seleccionadas.value.filter((f) => f !== url);
+    return;
+  }
+  if (seleccionadas.value.length < maxFotos.value) {
+    seleccionadas.value.push(url);
   } else {
-    if (seleccionadas.value.length < maxFotos.value) {
-      seleccionadas.value.push(url);
-    } else {
-      mostrarMensaje(`Solo podés elegir ${maxFotos.value} fotos`, 'error');
-    }
+    mostrarMensaje(`Solo podés elegir ${maxFotos.value} fotos`, 'error');
   }
 };
 
 const eliminarSeleccion = (url: string) => {
-  seleccionadas.value = seleccionadas.value.filter(f => f !== url);
+  seleccionadas.value = seleccionadas.value.filter((f) => f !== url);
 };
 
 const guardarSeleccion = async () => {
   if (!pedido.value) return;
   await actualizarPedido(pedido.value.id, {
-    seleccionadas: seleccionadas.value
+    seleccionadas: seleccionadas.value,
   });
-  mostrarMensaje('Selección guardada ✅');
+  mostrarMensaje('Selección guardada ✅', 'exito');
 };
-</script>
 
+// abrir modal por índice
+const abrirAmpliada = (index: number) => {
+  if (index < 0 || index >= fotosDisponibles.value.length) return;
+  fotoAmpliadaIndex.value = index;
+};
+// abrir modal por url (buscamos índice)
+const abrirAmpliadaPorUrl = (url: string) => {
+  const idx = fotosDisponibles.value.findIndex((f) => f.url === url);
+  if (idx >= 0) fotoAmpliadaIndex.value = idx;
+};
+const cerrarAmpliada = () => {
+  fotoAmpliadaIndex.value = null;
+};
+
+// navegación
+const siguienteFoto = () => {
+  if (fotoAmpliadaIndex.value === null || fotosDisponibles.value.length === 0) return;
+  fotoAmpliadaIndex.value = (fotoAmpliadaIndex.value + 1) % fotosDisponibles.value.length;
+};
+const anteriorFoto = () => {
+  if (fotoAmpliadaIndex.value === null || fotosDisponibles.value.length === 0) return;
+  fotoAmpliadaIndex.value = (fotoAmpliadaIndex.value - 1 + fotosDisponibles.value.length) % fotosDisponibles.value.length;
+};
+
+// teclado: ESC para cerrar, flechas para navegar
+const manejarTeclado = (e: KeyboardEvent) => {
+  if (fotoAmpliadaIndex.value === null) return;
+  if (e.key === 'Escape') cerrarAmpliada();
+  if (e.key === 'ArrowRight') siguienteFoto();
+  if (e.key === 'ArrowLeft') anteriorFoto();
+};
+
+onMounted(() => {
+  window.addEventListener('keydown', manejarTeclado);
+});
+onUnmounted(() => {
+  window.removeEventListener('keydown', manejarTeclado);
+});
+</script>
 
 <style scoped>
 * {
@@ -170,7 +259,7 @@ const guardarSeleccion = async () => {
 }
 
 .editar-pedido-container {
-  max-width: 600px;
+  max-width: 900px;
   margin: 2rem auto;
   padding: 2rem;
   background: #ffffff;
@@ -188,27 +277,18 @@ const guardarSeleccion = async () => {
 
 .form-group {
   display: flex;
-  flex-direction: column;
   gap: 0.8rem;
   margin-bottom: 1.5rem;
 }
-
 .input {
+  flex: 1;
   padding: 0.7rem;
   border-radius: 0.5rem;
   border: 1px solid #d1d5db;
   font-size: 1rem;
   background-color: #f9fafb;
   color: #111827;
-  transition: border 0.2s, box-shadow 0.2s;
 }
-
-.input:focus {
-  outline: none;
-  border-color: #4a90e2;
-  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
-}
-
 .boton {
   background-color: #4a90e2;
   color: white;
@@ -217,145 +297,148 @@ const guardarSeleccion = async () => {
   border-radius: 0.5rem;
   cursor: pointer;
   font-weight: 600;
-  transition: background-color 0.2s ease;
 }
-
-.boton:hover {
-  background-color: #3b7bd5;
-}
-
-.boton.secundario {
-  background-color: #10b981;
-}
-
-.boton.secundario:hover {
-  background-color: #059669;
-}
-
+.boton:hover { background-color: #3b7bd5; }
+.boton.secundario { background-color: #10b981; }
 .boton.eliminar {
   background-color: #ef4444;
   padding: 0.2rem 0.4rem;
   font-size: 0.8rem;
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 6px;
+  right: 40px;
   border-radius: 50%;
   color: white;
-  cursor: pointer;
 }
 
-.boton.eliminar:hover {
-  background-color: #dc2626;
-}
+.pedido-card { background-color: #f9fafb; padding: 1.5rem; border-radius: 0.75rem; border: 1px solid #e5e7eb; margin-top: 1rem; color: #111827; }
 
-.pedido-card {
-  background-color: #f9fafb;
-  padding: 1.5rem;
-  border-radius: 0.75rem;
-  border: 1px solid #e5e7eb;
-  margin-top: 1rem;
-  color: #111827;
-}
+.separador { height: 1px; background-color: #d1d5db; margin: 0.5rem 0 0.8rem 0; }
 
-.galeria-container h3 {
-  margin-bottom: 0.5rem;
-  color: #1f2937;
-}
-
-.separador {
-  height: 1px;
-  background-color: #d1d5db;
-  margin: 0.5rem 0 0.8rem 0;
-}
-
+/* Galería */
 .galeria {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 1rem;
+  gap: 0.9rem;
 }
-
-.foto-item {
-  cursor: pointer;
-}
-
+.foto-wrapper { position: relative; }
 .foto-mini {
   width: 100%;
   height: 100%;
+  aspect-ratio: 4/3;
   object-fit: cover;
   border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  transition: transform 0.2s, border 0.2s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.foto-mini:hover { transform: scale(1.03); box-shadow: 0 6px 18px rgba(0,0,0,0.18); }
+.foto-mini.activa { outline: 3px solid #4a90e2; }
+
+/* Botón lupa en miniatura */
+.btn-ampliar {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  color: white;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.btn-ampliar-peq {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  background: rgba(0,0,0,0.6);
+  border: none;
+  color: white;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
 }
 
-.foto-mini:hover {
-  transform: scale(1.05);
-}
-
-.foto-mini.activa {
-  border: 3px solid #4a90e2;
-}
-
-/* Fotos seleccionadas */
-.seleccionadas {
-  margin-bottom: 1.5rem;
-}
-
-.seleccionadas h3 {
-  margin-bottom: 0.5rem;
-}
-
+/* Seleccionadas */
 .seleccionadas-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 0.5rem;
+  gap: 0.6rem;
 }
-
-.foto-item-fija {
-  position: relative;
-  width: 100%;
-  padding-top: 100%;
-}
-
-.foto-item-fija img {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-}
+.foto-item-fija { position: relative; width: 100%; padding-top: 100%; }
+.foto-item-fija img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
 
 /* Mensajes */
-.mensaje {
-  text-align: center;
+.mensaje { text-align: center; margin-bottom: 1rem; padding: 0.7rem; border-radius: 0.5rem; font-weight: 600; }
+.mensaje.exito { background-color: #10b981; color: white; }
+.mensaje.error { background-color: #ef4444; color: white; }
+.mensaje.info { background-color: #f59e0b; color: white; }
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1200;
+  padding: 1rem;
+  flex-direction: column;
+}
+.foto-grande {
+  max-width: 90%;
+  max-height: 80%;
+  border-radius: 12px;
   margin-bottom: 1rem;
-  padding: 0.7rem;
-  border-radius: 0.5rem;
-  font-weight: 600;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  transition: transform 0.25s ease;
 }
-
-.mensaje.exito {
-  background-color: #10b981;
+.cerrar {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  font-size: 26px;
+  background: none;
+  border: none;
   color: white;
+  cursor: pointer;
 }
 
-.mensaje.error {
-  background-color: #ef4444;
+/* Navegación modal */
+.nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 30px;
+  background: rgba(255,255,255,0.06);
+  border: none;
   color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.nav.izquierda { left: 18px; }
+.nav.derecha { right: 18px; }
+
+/* Botón seleccionar dentro del modal */
+.boton.seleccionar {
+  margin-top: 8px;
+  background-color: #4a90e2;
+  color: white;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: none;
 }
 
-@media (max-width: 600px) {
-  .editar-pedido-container {
-    padding: 1rem;
-  }
-  .titulo {
-    font-size: 1.6rem;
-  }
-  .seleccionadas-grid {
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-    gap: 0.4rem;
-  }
+/* Transición fade + zoom para modal */
+.fade-zoom-enter-active, .fade-zoom-leave-active {
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.fade-zoom-enter-from, .fade-zoom-leave-to {
+  opacity: 0;
+  transform: scale(0.96);
 }
 </style>

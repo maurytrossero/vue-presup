@@ -1,5 +1,6 @@
 // src/services/cloudinaryService.ts
 import imageCompression from 'browser-image-compression';
+import axios from 'axios';
 
 export async function uploadToCloudinary(file: File): Promise<{ url: string; publicId: string }> {
   const CLOUD_NAME = "dgwdgpwzq";
@@ -29,4 +30,14 @@ export async function uploadToCloudinary(file: File): Promise<{ url: string; pub
 
 export function getPixelatedUrl(url: string, nivel = 30): string {
   return url.replace('/upload/', `/upload/e_pixelate:${nivel}/`);
+}
+
+export async function eliminarDeCloudinary(publicId: string) {
+  try {
+    // Llamada a tu backend o endpoint de Cloudinary para eliminar
+    await axios.post('/api/cloudinary/eliminar', { publicId });
+  } catch (error) {
+    console.error('Error eliminando de Cloudinary', error);
+    throw error;
+  }
 }

@@ -1,6 +1,7 @@
 // src/services/fotoService.ts
 import { db } from '@/services/firebase';
-import { collection, addDoc, getDocs, serverTimestamp, orderBy, query  } from 'firebase/firestore';
+import { collection, addDoc, getDocs, serverTimestamp, orderBy, query, doc, deleteDoc } from 'firebase/firestore';
+import { eliminarDeCloudinary } from './cloudinaryService'; // tu función para eliminar en Cloudinary
 
 export interface FotoData {
   url: string;
@@ -38,4 +39,19 @@ export async function getFotosDisponibles(eventoId: string): Promise<FotoSubida[
     id: doc.id,
     ...doc.data()
   })) as FotoSubida[];
+}
+
+// 🔹 Nueva función para eliminar foto
+export async function eliminarFoto(fotoId: string, publicId?: string) {
+  try {
+    // Primero eliminar en Cloudinary si existe publicId
+    if (publicId) {
+      await eliminarDeCloudinary(publicId); // asegurate que esta función exista y reciba 1 argumento
+    }
+    // Luego eliminar en Firestore
+    await deleteDoc(doc(db, 'fotosSubidas', fotoId));
+  } catch (error) {
+    console.error('Error eliminando foto:', error);
+    throw error;
+  }
 }
