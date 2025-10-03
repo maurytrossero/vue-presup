@@ -2,7 +2,7 @@
   <div class="editar-pedido-container">
     <h2 class="titulo">Seleccionar Fotos</h2>
 
-    <!-- Mensaje de notificación -->
+    <!-- Mensaje -->
     <div v-if="mensaje" :class="['mensaje', tipoMensaje]">{{ mensaje }}</div>
 
     <!-- Buscar pedido -->
@@ -22,13 +22,12 @@
       <p><strong>Fotos permitidas:</strong> {{ maxFotos }}</p>
       <p><strong>Seleccionadas:</strong> {{ seleccionadas.length }} / {{ maxFotos }}</p>
 
-      <!-- Mostrar aviso si el pedido no está aprobado -->
+      <!-- Estado pendiente -->
       <div v-if="pedido.estado !== 'aprobado'" class="mensaje info">
-        Tu pedido está pendiente de pago 💳.
-        Primero debés abonarlo para poder seleccionar tus fotos.
+        Tu pedido está pendiente de pago 💳. Primero debés abonarlo.
       </div>
 
-      <!-- Bloquear galería si no está aprobado -->
+      <!-- Selección habilitada -->
       <template v-else>
         <!-- Fotos seleccionadas -->
         <div v-if="seleccionadas.length" class="seleccionadas">
@@ -36,19 +35,25 @@
           <div class="separador"></div>
           <div class="seleccionadas-grid">
             <div
-              v-for="url in seleccionadas"
-              :key="url"
+              v-for="(url, index) in seleccionadas"
+              :key="index"
               class="foto-item-fija"
             >
               <img :src="url" class="foto-mini" />
-              <!-- Lupa para ampliar la foto seleccionada -->
+
+              <!-- ampliar -->
               <button class="btn-ampliar-peq" @click.stop="abrirAmpliadaPorUrl(url)" title="Ver en grande">🔍</button>
-              <button class="boton eliminar" @click="eliminarSeleccion(url)" title="Quitar selección">✕</button>
+
+              <!-- agregar copia -->
+              <button class="boton agregar" @click="toggleSeleccion(url)" title="Agregar otra copia">➕</button>
+
+              <!-- eliminar solo esta copia -->
+              <button class="boton eliminar" @click="eliminarCopia(index)" title="Quitar esta copia">✕</button>
             </div>
           </div>
         </div>
 
-        <!-- Galería completa -->
+        <!-- Galería -->
         <div class="galeria-container">
           <h3>Elegí tus fotos de la galería para revelar</h3>
           <div class="separador"></div>
@@ -58,7 +63,6 @@
               :key="foto.url"
               class="foto-wrapper"
             >
-              <!-- Clic simple = seleccionar/deseleccionar -->
               <img
                 :src="foto.url"
                 :alt="foto.nombre"
@@ -66,38 +70,27 @@
                 @click="toggleSeleccion(foto.url)"
                 :class="{ activa: seleccionadas.includes(foto.url) }"
               />
-              <!-- Botón lupa para ampliar -->
               <button class="btn-ampliar" @click.stop="abrirAmpliada(index)" title="Ver en grande">🔍</button>
             </div>
           </div>
         </div>
 
+        <!-- Guardar -->
         <button
           @click="guardarSeleccion"
-          class="boton secundario"
-          :disabled="seleccionadas.length === 0"
+          class="boton secundario guardar-btn"
         >
           Guardar Selección
         </button>
       </template>
     </div>
-    <!-- Modal ampliado con navegación -->
-    <transition name="fade-zoom">
-      <div
-        v-if="fotoAmpliadaIndex !== null"
-        class="modal"
-        @click.self="cerrarAmpliada"
-        role="dialog"
-        aria-modal="true"
-      >
-        <button class="cerrar" @click="cerrarAmpliada" aria-label="Cerrar">✕</button>
 
-        <button
-          class="nav izquierda"
-          @click.stop="anteriorFoto"
-          :disabled="!tieneFotos"
-          aria-label="Anterior"
-        >⬅</button>
+    <!-- Modal -->
+    <transition name="fade-zoom">
+      <div v-if="fotoAmpliadaIndex !== null" class="modal" @click.self="cerrarAmpliada">
+        <button class="cerrar" @click="cerrarAmpliada">✕</button>
+
+        <button class="nav izquierda" @click.stop="anteriorFoto" :disabled="!tieneFotos">⬅</button>
 
         <img
           v-if="tieneFotos && fotoAmpliadaIndex !== null"
@@ -106,19 +99,15 @@
           class="foto-grande"
         />
 
-        <button
-          class="nav derecha"
-          @click.stop="siguienteFoto"
-          :disabled="!tieneFotos"
-          aria-label="Siguiente"
-        >➡</button>
+        <button class="nav derecha" @click.stop="siguienteFoto" :disabled="!tieneFotos">➡</button>
 
-        <button
-          class="boton seleccionar"
-          @click="toggleSeleccion(fotoActualUrl)"
-        >
-          {{ fotoActualUrl && seleccionadas.includes(fotoActualUrl) ? 'Quitar de selección' : 'Seleccionar esta foto' }}
+        <button class="boton seleccionar" @click="toggleSeleccion(fotoActualUrl)">
+          {{ fotoActualUrl && seleccionadas.includes(fotoActualUrl) ? 'Agregar otra copia' : 'Seleccionar esta foto' }}
         </button>
+
+        <div class="contador">
+          {{ fotoAmpliadaIndex + 1 }} / {{ fotosDisponibles.length }}
+        </div>
       </div>
     </transition>
   </div>
@@ -145,19 +134,11 @@ const fotosDisponibles = ref<{ url: string; nombre: string }[]>([]);
 
 const mensaje = ref('');
 const tipoMensaje = ref<'exito' | 'error' | 'info'>('exito');
-
-// índice de la foto ampliada en fotosDisponibles (null = modal cerrado)
 const fotoAmpliadaIndex = ref<number | null>(null);
 
-// computed
-const maxFotos = computed(() => {
-  if (!pedido.value) return 0;
-  return (pedido.value.paquete ?? 0) + (pedido.value.fotosExtra ?? 0);
-});
+const maxFotos = computed(() => (pedido.value ? (pedido.value.paquete ?? 0) + (pedido.value.fotosExtra ?? 0) : 0));
 const tieneFotos = computed(() => fotosDisponibles.value.length > 0);
-const fotoActualUrl = computed(() => {
-  return fotoAmpliadaIndex.value !== null ? fotosDisponibles.value[fotoAmpliadaIndex.value]?.url ?? null : null;
-});
+const fotoActualUrl = computed(() => (fotoAmpliadaIndex.value !== null ? fotosDisponibles.value[fotoAmpliadaIndex.value]?.url ?? null : null));
 
 const mostrarMensaje = (texto: string, tipo: 'exito' | 'error' | 'info' = 'exito') => {
   mensaje.value = texto;
@@ -179,64 +160,46 @@ const buscarPedido = async () => {
   seleccionadas.value = resultado.seleccionadas ?? [];
   fotosDisponibles.value = [];
 
-  // Solo cargar fotos si el pedido está aprobado
   if (resultado.estado === 'aprobado') {
-    const fotos = await getFotosDisponibles('evento123'); // reemplazar por evento real
-    fotosDisponibles.value = fotos.map((f) => ({ url: f.url, nombre: f.nombre }));
+    const fotos = await getFotosDisponibles('evento123');
+    fotosDisponibles.value = fotos.map(f => ({ url: f.url, nombre: f.nombre }));
   }
 };
 
-// seleccion / deselect
+// permite duplicados
 const toggleSeleccion = (url: string | null) => {
   if (!url) return;
-  if (seleccionadas.value.includes(url)) {
-    seleccionadas.value = seleccionadas.value.filter((f) => f !== url);
-    return;
-  }
   if (seleccionadas.value.length < maxFotos.value) {
     seleccionadas.value.push(url);
   } else {
-    mostrarMensaje(`Solo podés elegir ${maxFotos.value} fotos`, 'error');
+    mostrarMensaje(`No podés superar ${maxFotos.value} fotos`, 'error');
   }
 };
 
-const eliminarSeleccion = (url: string) => {
-  seleccionadas.value = seleccionadas.value.filter((f) => f !== url);
+// eliminar solo una copia
+const eliminarCopia = (index: number) => {
+  seleccionadas.value.splice(index, 1);
 };
 
 const guardarSeleccion = async () => {
   if (!pedido.value) return;
-  await actualizarPedido(pedido.value.id, {
-    seleccionadas: seleccionadas.value,
-  });
+  await actualizarPedido(pedido.value.id, { seleccionadas: seleccionadas.value });
   mostrarMensaje('Selección guardada ✅', 'exito');
 };
 
-// abrir modal por índice
+// Modal
 const abrirAmpliada = (index: number) => {
   if (index < 0 || index >= fotosDisponibles.value.length) return;
   fotoAmpliadaIndex.value = index;
 };
-// abrir modal por url (buscamos índice)
 const abrirAmpliadaPorUrl = (url: string) => {
-  const idx = fotosDisponibles.value.findIndex((f) => f.url === url);
+  const idx = fotosDisponibles.value.findIndex(f => f.url === url);
   if (idx >= 0) fotoAmpliadaIndex.value = idx;
 };
-const cerrarAmpliada = () => {
-  fotoAmpliadaIndex.value = null;
-};
+const cerrarAmpliada = () => (fotoAmpliadaIndex.value = null);
+const siguienteFoto = () => { if (fotoAmpliadaIndex.value !== null) fotoAmpliadaIndex.value = (fotoAmpliadaIndex.value + 1) % fotosDisponibles.value.length };
+const anteriorFoto = () => { if (fotoAmpliadaIndex.value !== null) fotoAmpliadaIndex.value = (fotoAmpliadaIndex.value - 1 + fotosDisponibles.value.length) % fotosDisponibles.value.length };
 
-// navegación
-const siguienteFoto = () => {
-  if (fotoAmpliadaIndex.value === null || fotosDisponibles.value.length === 0) return;
-  fotoAmpliadaIndex.value = (fotoAmpliadaIndex.value + 1) % fotosDisponibles.value.length;
-};
-const anteriorFoto = () => {
-  if (fotoAmpliadaIndex.value === null || fotosDisponibles.value.length === 0) return;
-  fotoAmpliadaIndex.value = (fotoAmpliadaIndex.value - 1 + fotosDisponibles.value.length) % fotosDisponibles.value.length;
-};
-
-// teclado: ESC para cerrar, flechas para navegar
 const manejarTeclado = (e: KeyboardEvent) => {
   if (fotoAmpliadaIndex.value === null) return;
   if (e.key === 'Escape') cerrarAmpliada();
@@ -244,12 +207,8 @@ const manejarTeclado = (e: KeyboardEvent) => {
   if (e.key === 'ArrowLeft') anteriorFoto();
 };
 
-onMounted(() => {
-  window.addEventListener('keydown', manejarTeclado);
-});
-onUnmounted(() => {
-  window.removeEventListener('keydown', manejarTeclado);
-});
+onMounted(() => window.addEventListener('keydown', manejarTeclado));
+onUnmounted(() => window.removeEventListener('keydown', manejarTeclado));
 </script>
 
 <style scoped>
@@ -440,5 +399,23 @@ onUnmounted(() => {
 .fade-zoom-enter-from, .fade-zoom-leave-to {
   opacity: 0;
   transform: scale(0.96);
+}
+/* botón para agregar copia */
+.boton.agregar {
+  background-color: #3b82f6;
+  padding: 0.2rem 0.4rem;
+  font-size: 0.8rem;
+  position: absolute;
+  top: 6px;
+  right: 70px;
+  border-radius: 50%;
+  color: white;
+}
+.boton.agregar:hover { background-color: #2563eb; }
+
+/* separar botón guardar */
+.guardar-btn {
+  margin-top: 20px;
+  display: block;
 }
 </style>
