@@ -159,10 +159,14 @@ const guardarCambios = async () => {
     return;
   }
 
-  await actualizarPedido(pedido.value.id, {
-    paquete: paqueteToSave,
-    fotosExtra: extrasToSave
-  });
+const nuevoTotal = (paqueteToSave + extrasToSave) * 4500;
+
+await actualizarPedido(pedido.value.id, {
+  paquete: paqueteToSave,
+  fotosExtra: extrasToSave,
+  total: nuevoTotal,
+});
+
   mostrarMensaje('Datos actualizados ✅');
 };
 
