@@ -1,8 +1,8 @@
 <template>
   <div class="contenedor-pedidos">
+    <h2 class="titulo-pedidos">Pedidos de Fotos de Comuniones 12/10/2025</h2>
 
-   <h2 class="titulo-pedidos">Pedidos de Fotos de Comuniones 12/10/2025</h2>
-    <!-- 🔒 Bloque mensaje masivo solo si está autenticado -->
+    <!-- 🔒 Bloque mensaje masivo -->
     <div v-if="isAuthenticated" class="bloque-mensaje">
       <label for="mensaje" class="label-mensaje">Mensaje para enviar a todos:</label>
       <textarea
@@ -17,8 +17,7 @@
       </button>
     </div>
 
- 
-    <!-- 🔎 Buscador accesible para todos -->
+    <!-- 🔎 Buscador 
     <div class="buscador">
       <label for="busqueda" class="label-busqueda">Buscar pedido por nombre:</label>
       <input
@@ -28,39 +27,81 @@
         placeholder="Ingresá el nombre..."
         class="input-busqueda"
       />
+    </div>-->
+
+    <!-- 🧭 Bloque de filtros y búsqueda -->
+    <div v-if="pedidos.length > 0" class="contenedor-filtros">
+      <!-- Estado -->
+      <div v-if="isAuthenticated" class="filtro-item">
+        <label for="estado" class="label-filtro">Estado:</label>
+        <select v-model="filtroEstado" id="estado" class="select-filtro">
+          <option value="">Todos</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="aprobado">Aprobado</option>
+        </select>
+      </div>
+
+      <!-- Buscar -->
+      <div class="filtro-item">
+        <label for="busqueda" class="label-filtro">Nombre:</label>
+        <input
+          id="busqueda"
+          v-model="busqueda"
+          type="text"
+          placeholder="Ingresá el nombre..."
+          class="input-filtro"
+        />
+      </div>
+
+      <!-- WhatsApp -->
+      <div v-if="isAuthenticated" class="filtro-item">
+        <label for="whatsapp" class="label-filtro">WhatsApp:</label>
+        <input
+          id="whatsapp"
+          v-model="filtroWhatsapp"
+          type="text"
+          placeholder="Ej: 3564..."
+          class="input-filtro"
+        />
+      </div>
+
+      <!-- Orden -->
+      <div class="filtro-item">
+        <label for="orden" class="label-filtro">Orden:</label>
+        <select v-model="ordenSeleccionado" id="orden" class="select-filtro">
+          <option value="nombreAsc">Nombre (A–Z)</option>
+          <option value="fechaDesc">Más reciente</option>
+          <option value="fechaAsc">Más antiguo</option>
+        </select>
+      </div>
     </div>
-    <!-- 🔎 Filtros -->
-    <div class="filtros" v-if="isAuthenticated && pedidos.length > 0">
-      <label>Filtrar por estado:</label>
-      <select v-model="filtroEstado" class="select-filtro">
-        <option value="">Todos</option>
-        <option value="pendiente">Pendiente</option>
-        <option value="aprobado">Aprobado</option>
-      </select>
-    </div>
+
 
     <div v-if="loading" class="mensaje-cargando">Cargando pedidos...</div>
     <div v-else-if="pedidosFiltrados.length === 0" class="mensaje-vacio">
       No hay pedidos registrados.
     </div>
 
+    <!-- 🧾 Listado de pedidos -->
     <div v-else class="lista-pedidos">
-      <div v-for="pedido in pedidosFiltrados" :key="pedido.id" class="tarjeta-pedido">
+      <div
+        v-for="(pedido, index) in pedidosFiltrados"
+        :key="pedido.id"
+        class="tarjeta-pedido"
+      >
         <div class="info-pedido">
-          <p><strong>Nombre:</strong> {{ pedido.nombre }}</p>
+          <p><strong>#{{ index + 1 }}.</strong> <strong>Nombre:</strong> {{ pedido.nombre }}</p>
 
-          <!-- 🔒 Mostrar WhatsApp solo si está autenticado -->
           <template v-if="isAuthenticated">
             <p>
               <strong>WhatsApp:</strong> {{ pedido.whatsapp }}
               <a
-                :href="whatsappLink(pedido.whatsapp, pedido.nombre)"
-                target="_blank"
-                rel="noopener"
+                href="#"
+                @click.prevent="enviarMensajeIndividual(pedido)"
                 class="link-whatsapp"
-                title="Enviar mensaje por WhatsApp"
+                title="Enviar mensaje con el texto redactado"
               >
-                📲 Enviar WhatsApp
+                📲 Enviar mensaje
               </a>
             </p>
           </template>
@@ -70,15 +111,12 @@
           </p>
           <p><strong>Total:</strong> ${{ pedido.total }}</p>
 
-          <!-- 🔒 Mostrar comprobantes solo si está autenticado -->
           <div class="comprobantes-section" v-if="isAuthenticated">
             <p><strong>Comprobantes:</strong></p>
             <div v-if="pedido.comprobantes?.length > 0">
               <ul class="comprobantes-lista">
                 <li v-for="c in pedido.comprobantes" :key="c.nombreArchivo">
-                  <a :href="c.url" target="_blank" class="link-comprobante">
-                    {{ c.nombreArchivo }}
-                  </a>
+                  <a :href="c.url" target="_blank" class="link-comprobante">{{ c.nombreArchivo }}</a>
                   <div class="comprobante-preview">
                     <img :src="c.url" alt="Comprobante" class="comprobante-img" />
                   </div>
@@ -98,7 +136,6 @@
         </div>
 
         <div class="acciones">
-          <!-- 🔒 Botón aprobar solo para autenticados -->
           <button
             v-if="pedido.estado === 'pendiente' && isAuthenticated"
             @click="aprobarPedido(pedido.id)"
@@ -108,7 +145,6 @@
             Aprobar
           </button>
 
-          <!-- 🔒 Botón eliminar solo autenticados -->
           <button
             v-if="isAuthenticated"
             @click="eliminarPedido(pedido.id)"
@@ -121,9 +157,11 @@
       </div>
     </div>
 
-    <!-- 🔒 Total recaudado solo autenticados -->
+    <!-- 🔒 Totales -->
     <div v-if="pedidos.length > 0 && isAuthenticated" class="total-recaudado">
-      💰 <strong>Total recaudado:</strong> ${{ totalRecaudado }}
+      💰 <strong>Total recaudado (según filtro):</strong> ${{ totalRecaudado }}
+      <br />
+      📦 <strong>Mostrando:</strong> {{ cantidadPedidos }} pedidos de {{ totalPedidos }}
     </div>
   </div>
 </template>
@@ -136,7 +174,9 @@ const mensajeMasivo = ref('Hola, te confirmamos que recibimos tu pedido de fotos
 const pedidos = ref<any[]>([]);
 const loading = ref(true);
 const filtroEstado = ref('');
-const busqueda = ref(''); // 🆕 texto del buscador
+const busqueda = ref('');
+const filtroWhatsapp = ref('');
+const ordenSeleccionado = ref('fechaDesc');
 
 // ✅ Computed para autenticación
 const isAuthenticated = computed(() => {
@@ -148,8 +188,13 @@ function estadoColor(estado: string) {
 }
 
 async function aprobarPedido(id: string) {
+  const confirmar = confirm(
+    '⚠️ ¿Confirmás que el pago fue acreditado correctamente?\n\nUna vez aprobado, el pedido se marcará como confirmado y será visible como aprobado.'
+  );
+  if (!confirmar) return;
   await aprobarEstadoPedido(id);
 }
+
 
 async function eliminarPedido(id: string) {
   if (confirm('¿Seguro que querés eliminar este pedido?')) {
@@ -157,46 +202,85 @@ async function eliminarPedido(id: string) {
   }
 }
 
-function whatsappLink(whatsapp: string | undefined, nombre: string) {
-  const telefono = (whatsapp || '').replace(/[^0-9]/g, '');
-  const mensaje = `Hola, te confirmamos que recibimos tu pedido de fotos para ${nombre} de confirmaciones. Estamos procesándolo.`;
-  return `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`;
+// 🟢 Enviar mensaje individual (usa el texto del cuadro)
+function enviarMensajeIndividual(pedido: any) {
+  if (!mensajeMasivo.value.trim()) {
+    alert('Primero escribí un mensaje en el cuadro superior.');
+    return;
+  }
+  const telefono = (pedido.whatsapp || '').replace(/[^0-9]/g, '');
+  if (!telefono) return;
+  const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensajeMasivo.value)}`;
+  window.open(url, '_blank');
 }
 
+// 🟢 Enviar mensajes a todos los pedidos filtrados
 function enviarMensajesMasivos() {
-  if (!mensajeMasivo.value.trim()) return;
+  if (!mensajeMasivo.value.trim()) {
+    alert('Primero escribí un mensaje para enviar.');
+    return;
+  }
 
-  pedidos.value.forEach(pedido => {
+  if (pedidosFiltrados.value.length === 0) {
+    alert('No hay pedidos en la lista filtrada.');
+    return;
+  }
+
+  if (!confirm(`¿Enviar este mensaje a ${pedidosFiltrados.value.length} pedidos visibles?`)) return;
+
+  pedidosFiltrados.value.forEach((pedido, i) => {
     const telefono = (pedido.whatsapp || '').replace(/[^0-9]/g, '');
     if (telefono) {
       const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensajeMasivo.value)}`;
-      window.open(url, '_blank');
+      // 🕐 Abrir con un pequeño retraso para evitar bloqueo de pop-ups
+      setTimeout(() => window.open(url, '_blank'), i * 500);
     }
   });
 }
-
-// 🔹 Computed para el total recaudado
-const totalRecaudado = computed(() => {
-  return pedidos.value.reduce((acc, p) => acc + (p.total || 0), 0);
-});
 
 // 🔹 Computed para filtros + búsqueda
 const pedidosFiltrados = computed(() => {
   let lista = pedidos.value;
 
+  // 🔸 Filtro por estado
   if (isAuthenticated.value && filtroEstado.value) {
     lista = lista.filter(p => p.estado === filtroEstado.value);
   }
 
+  // 🔸 Filtro por nombre
   if (busqueda.value.trim()) {
     const texto = busqueda.value.toLowerCase();
     lista = lista.filter(p => p.nombre?.toLowerCase().includes(texto));
   }
 
+  // 🔸 Filtro por WhatsApp (solo si logueado)
+  if (isAuthenticated.value && filtroWhatsapp.value.trim()) {
+    const tel = filtroWhatsapp.value.replace(/[^0-9]/g, '');
+    lista = lista.filter(p => (p.whatsapp || '').replace(/[^0-9]/g, '').includes(tel));
+  }
+
+  // 🔸 Ordenamiento
+  if (ordenSeleccionado.value === 'nombreAsc') {
+    lista = [...lista].sort((a, b) => a.nombre?.localeCompare(b.nombre));
+  } else if (ordenSeleccionado.value === 'fechaDesc') {
+    lista = [...lista].sort((a, b) => b.createdAt?.toMillis() - a.createdAt?.toMillis());
+  } else if (ordenSeleccionado.value === 'fechaAsc') {
+    lista = [...lista].sort((a, b) => a.createdAt?.toMillis() - b.createdAt?.toMillis());
+  }
+
   return lista;
 });
 
-// Suscripción en tiempo real
+
+// 🔹 Total recaudado dinámico según filtro
+const totalRecaudado = computed(() => {
+  return pedidosFiltrados.value.reduce((acc, p) => acc + (p.total || 0), 0);
+});
+
+const cantidadPedidos = computed(() => pedidosFiltrados.value.length);
+const totalPedidos = computed(() => pedidos.value.length);
+
+// 🔹 Suscripción en tiempo real
 let unsubscribe: (() => void) | null = null;
 
 onMounted(() => {
@@ -367,7 +451,9 @@ onUnmounted(() => {
 }
 
 .textarea-mensaje {
-  width: 100%;
+  display: block;              /* asegura que respete los márgenes */
+  margin: 0 auto;              /* centra horizontalmente */
+  width: 80%;                  /* opcional: un poco más angosto para estética */
   padding: 0.75rem 1rem;
   border: 1px solid #d1d5db;
   border-radius: 10px;
@@ -503,4 +589,106 @@ onUnmounted(() => {
   background-color: #fff;
   box-shadow: 0 2px 5px rgba(37, 99, 235, 0.2);
 }
+.filtro-whatsapp,
+.ordenar {
+  margin: 0.5rem 0 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.label-whatsapp,
+.label-orden {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.input-whatsapp,
+.select-orden {
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.2s ease;
+}
+
+.input-whatsapp:focus,
+.select-orden:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.2);
+}
+/* 🧭 Contenedor general de filtros */
+.contenedor-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin: 1.5rem 0 2rem;
+  padding: 1rem;
+  background: #f3f4f6;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Cada ítem del filtro */
+.filtro-item {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 150px;
+  min-width: 140px;
+}
+
+/* Etiquetas */
+.label-filtro {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  color: #1f2937;
+}
+
+/* Campos */
+.input-filtro,
+.select-filtro {
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.input-filtro:focus,
+.select-filtro:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.25);
+}
+
+/* 🖥️ Desktop: todos los filtros en una sola fila */
+@media (min-width: 640px) {
+  .contenedor-filtros {
+    flex-wrap: nowrap;
+  }
+  .filtro-item {
+    flex: 1;
+  }
+}
+
+/* 📱 Mobile: filtros apilados */
+@media (max-width: 639px) {
+  .contenedor-filtros {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filtro-item {
+    width: 100%;
+  }
+}
+
 </style>
