@@ -2,7 +2,7 @@
   <div class="contenedor-pedidos">
     <h2 class="titulo-pedidos">Listado de Pedidos con Fotos Seleccionadas</h2>
 
-    <!-- 🔎 Buscador -->
+    <!-- 🔎 Buscadores -->
     <div class="buscador">
       <label for="busqueda" class="label-busqueda">Buscar pedido por nombre:</label>
       <input
@@ -10,6 +10,17 @@
         v-model="busqueda"
         type="text"
         placeholder="Ingresá el nombre..."
+        class="input-busqueda"
+      />
+    </div>
+
+    <div class="buscador">
+      <label for="busquedaWhatsapp" class="label-busqueda">Buscar por número de WhatsApp:</label>
+      <input
+        id="busquedaWhatsapp"
+        v-model="busquedaWhatsapp"
+        type="text"
+        placeholder="Ej: 3564..."
         class="input-busqueda"
       />
     </div>
@@ -71,15 +82,14 @@
           <div v-if="pedido.seleccionadas?.length" class="fotos-seleccionadas">
             <h4>Fotos Seleccionadas ({{ pedido.seleccionadas.length }})</h4>
             <div class="grid-fotos">
-            <div
-            v-for="(url, i) in pedido.seleccionadas"
-            :key="i"
-            class="foto-wrapper"
-            >
-            <img :src="url" alt="Foto seleccionada" class="foto-mini" @click="verAmpliada(url)" />
-            <p class="nombre-foto">{{ obtenerNombreArchivo(url) }}</p>
-            </div>
-
+              <div
+                v-for="(url, i) in pedido.seleccionadas"
+                :key="i"
+                class="foto-wrapper"
+              >
+                <img :src="url" alt="Foto seleccionada" class="foto-mini" @click="verAmpliada(url)" />
+                <p class="nombre-foto">{{ obtenerNombreArchivo(url) }}</p>
+              </div>
             </div>
           </div>
           <p v-else class="sin-fotos">No hay fotos seleccionadas.</p>
@@ -126,6 +136,7 @@ import { escucharPedidos, aprobarEstadoPedido, eliminarPedido } from '@/services
 const pedidos = ref<any[]>([])
 const filtro = ref<'todos' | 'pendiente' | 'aprobado' | 'completos' | 'incompletos'>('todos')
 const busqueda = ref('')
+const busquedaWhatsapp = ref('')
 const loading = ref(true)
 const fotoAmpliada = ref<string | null>(null)
 
@@ -134,7 +145,7 @@ const isAuthenticated = computed(() => localStorage.getItem('token') !== null)
 const pedidosFiltrados = computed(() => {
   let lista = pedidos.value
 
-  // 🔒 Filtrado por estado (solo si está logueado)
+  // 🔒 Filtrado por estado
   if (isAuthenticated.value && ['pendiente', 'aprobado'].includes(filtro.value)) {
     lista = lista.filter(p => p.estado === filtro.value)
   }
@@ -162,9 +173,16 @@ const pedidosFiltrados = computed(() => {
     lista = lista.filter(p => p.nombre?.toLowerCase().includes(texto))
   }
 
+  // ☎️ Filtro por número de WhatsApp
+  if (busquedaWhatsapp.value.trim()) {
+    const numero = busquedaWhatsapp.value.replace(/[^0-9]/g, '')
+    lista = lista.filter(p =>
+      (p.whatsapp || '').replace(/[^0-9]/g, '').includes(numero)
+    )
+  }
+
   return lista
 })
-
 
 const totalRecaudado = computed(() =>
   pedidosFiltrados.value.reduce((acc, p) => acc + (p.total || 0), 0)
@@ -198,6 +216,7 @@ function whatsappLink(whatsapp: string | undefined, nombre: string) {
 function verAmpliada(url: string) {
   fotoAmpliada.value = url
 }
+
 function obtenerNombreArchivo(url: string) {
   try {
     const partes = url.split('/')
@@ -219,6 +238,7 @@ onUnmounted(() => {
   if (unsubscribe) unsubscribe()
 })
 </script>
+
 
 <style scoped>
 .contenedor-pedidos {
