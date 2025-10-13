@@ -415,7 +415,26 @@ onUnmounted(() => window.removeEventListener('keydown', manejarTeclado));
 
 /* separar botón guardar */
 .guardar-btn {
-  margin-top: 20px;
-  display: block;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #10b981;
+  color: white;
+  padding: 0.8rem 2rem;
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  z-index: 1500;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
+
+.guardar-btn:hover {
+  background-color: #059669;
+  transform: translateX(-50%) scale(1.04);
+}
+
 </style>

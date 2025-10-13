@@ -192,3 +192,8 @@ export async function eliminarPedidoPorId(id: string): Promise<void> {
   const pedidoRef = doc(db, 'fotoPedidos', id);
   await deleteDoc(pedidoRef);
 }
+
+export async function eliminarPedido(id: string): Promise<void> {
+  const pedidoRef = doc(db, 'fotoPedidos', id);
+  await deleteDoc(pedidoRef);
+}

@@ -17,64 +17,46 @@
       </button>
     </div>
 
-    <!-- 🔎 Buscador 
-    <div class="buscador">
-      <label for="busqueda" class="label-busqueda">Buscar pedido por nombre:</label>
-      <input
-        id="busqueda"
-        v-model="busqueda"
-        type="text"
-        placeholder="Ingresá el nombre..."
-        class="input-busqueda"
-      />
-    </div>-->
-
-    <!-- 🧭 Bloque de filtros y búsqueda -->
-    <div v-if="pedidos.length > 0" class="contenedor-filtros">
-      <!-- Estado -->
-      <div v-if="isAuthenticated" class="filtro-item">
-        <label for="estado" class="label-filtro">Estado:</label>
-        <select v-model="filtroEstado" id="estado" class="select-filtro">
-          <option value="">Todos</option>
-          <option value="pendiente">Pendiente</option>
-          <option value="aprobado">Aprobado</option>
-        </select>
+    <!-- 🔍 Bloque de filtros plegable -->
+    <div class="filtros-wrapper">
+      <div class="barra-filtros" @click="mostrarFiltros = !mostrarFiltros">
+        <span>Filtros</span>
+        <span class="icono-flecha" :class="{ abierto: mostrarFiltros }">▼</span>
       </div>
 
-      <!-- Buscar -->
-      <div class="filtro-item">
-        <label for="busqueda" class="label-filtro">Nombre:</label>
-        <input
-          id="busqueda"
-          v-model="busqueda"
-          type="text"
-          placeholder="Ingresá el nombre..."
-          class="input-filtro"
-        />
-      </div>
+      <transition name="deslizar">
+        <div v-if="mostrarFiltros" class="contenedor-filtros">
+          <div class="filtro-item">
+            <label class="label-filtro">Estado</label>
+            <select v-model="filtroEstado" class="select-filtro">
+              <option value="">Todos</option>
+              <option value="aprobado">Aprobado</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="rechazado">Rechazado</option>
+            </select>
+          </div>
 
-      <!-- WhatsApp -->
-      <div v-if="isAuthenticated" class="filtro-item">
-        <label for="whatsapp" class="label-filtro">WhatsApp:</label>
-        <input
-          id="whatsapp"
-          v-model="filtroWhatsapp"
-          type="text"
-          placeholder="Ej: 3564..."
-          class="input-filtro"
-        />
-      </div>
+          <div class="filtro-item">
+            <label class="label-filtro">Nombre</label>
+            <input v-model="filtroNombre" class="input-filtro" placeholder="Buscar..." />
+          </div>
 
-      <!-- Orden -->
-      <div class="filtro-item">
-        <label for="orden" class="label-filtro">Orden:</label>
-        <select v-model="ordenSeleccionado" id="orden" class="select-filtro">
-          <option value="nombreAsc">Nombre (A–Z)</option>
-          <option value="fechaDesc">Más reciente</option>
-          <option value="fechaAsc">Más antiguo</option>
-        </select>
-      </div>
+          <div class="filtro-item">
+            <label class="label-filtro">WhatsApp</label>
+            <input v-model="filtroWhatsapp" class="input-filtro" placeholder="Ej: 3564..." />
+          </div>
+
+          <div class="filtro-item">
+            <label class="label-filtro">Orden</label>
+            <select v-model="orden" class="select-filtro">
+              <option value="asc">Ascendente</option>
+              <option value="desc">Descendente</option>
+            </select>
+          </div>
+        </div>
+      </transition>
     </div>
+
 
 
     <div v-if="loading" class="mensaje-cargando">Cargando pedidos...</div>
@@ -170,18 +152,17 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { aprobarEstadoPedido, escucharPedidos, eliminarPedidoPorId } from '@/services/fotoConfirmacionService';
 
+const mostrarFiltros = ref(false);
+const filtroNombre = ref('');
+const filtroWhatsapp = ref('');
+const filtroEstado = ref('');
+const orden = ref('asc');
 const mensajeMasivo = ref('Hola, te confirmamos que recibimos tu pedido de fotos de confirmación. Muchas gracias 🙌');
 const pedidos = ref<any[]>([]);
 const loading = ref(true);
-const filtroEstado = ref('');
-const busqueda = ref('');
-const filtroWhatsapp = ref('');
-const ordenSeleccionado = ref('fechaDesc');
 
 // ✅ Computed para autenticación
-const isAuthenticated = computed(() => {
-  return localStorage.getItem('token') !== null;
-});
+const isAuthenticated = computed(() => localStorage.getItem('token') !== null);
 
 function estadoColor(estado: string) {
   return estado === 'aprobado' ? 'estado-aprobado' : 'estado-pendiente';
@@ -194,7 +175,6 @@ async function aprobarPedido(id: string) {
   if (!confirmar) return;
   await aprobarEstadoPedido(id);
 }
-
 
 async function eliminarPedido(id: string) {
   if (confirm('¿Seguro que querés eliminar este pedido?')) {
@@ -214,7 +194,7 @@ function enviarMensajeIndividual(pedido: any) {
   window.open(url, '_blank');
 }
 
-// 🟢 Enviar mensajes a todos los pedidos filtrados
+// 🟢 Enviar mensajes masivos
 function enviarMensajesMasivos() {
   if (!mensajeMasivo.value.trim()) {
     alert('Primero escribí un mensaje para enviar.');
@@ -232,13 +212,12 @@ function enviarMensajesMasivos() {
     const telefono = (pedido.whatsapp || '').replace(/[^0-9]/g, '');
     if (telefono) {
       const url = `https://wa.me/${telefono}?text=${encodeURIComponent(mensajeMasivo.value)}`;
-      // 🕐 Abrir con un pequeño retraso para evitar bloqueo de pop-ups
       setTimeout(() => window.open(url, '_blank'), i * 500);
     }
   });
 }
 
-// 🔹 Computed para filtros + búsqueda
+// 🔹 Computed para filtros + orden
 const pedidosFiltrados = computed(() => {
   let lista = pedidos.value;
 
@@ -248,39 +227,36 @@ const pedidosFiltrados = computed(() => {
   }
 
   // 🔸 Filtro por nombre
-  if (busqueda.value.trim()) {
-    const texto = busqueda.value.toLowerCase();
+  if (filtroNombre.value.trim()) {
+    const texto = filtroNombre.value.toLowerCase();
     lista = lista.filter(p => p.nombre?.toLowerCase().includes(texto));
   }
 
-  // 🔸 Filtro por WhatsApp (solo si logueado)
+  // 🔸 Filtro por WhatsApp
   if (isAuthenticated.value && filtroWhatsapp.value.trim()) {
     const tel = filtroWhatsapp.value.replace(/[^0-9]/g, '');
     lista = lista.filter(p => (p.whatsapp || '').replace(/[^0-9]/g, '').includes(tel));
   }
 
-  // 🔸 Ordenamiento
-  if (ordenSeleccionado.value === 'nombreAsc') {
-    lista = [...lista].sort((a, b) => a.nombre?.localeCompare(b.nombre));
-  } else if (ordenSeleccionado.value === 'fechaDesc') {
-    lista = [...lista].sort((a, b) => b.createdAt?.toMillis() - a.createdAt?.toMillis());
-  } else if (ordenSeleccionado.value === 'fechaAsc') {
+  // 🔸 Orden
+  if (orden.value === 'asc') {
     lista = [...lista].sort((a, b) => a.createdAt?.toMillis() - b.createdAt?.toMillis());
+  } else if (orden.value === 'desc') {
+    lista = [...lista].sort((a, b) => b.createdAt?.toMillis() - a.createdAt?.toMillis());
   }
 
   return lista;
 });
 
-
-// 🔹 Total recaudado dinámico según filtro
-const totalRecaudado = computed(() => {
-  return pedidosFiltrados.value.reduce((acc, p) => acc + (p.total || 0), 0);
-});
+// 💰 Totales dinámicos
+const totalRecaudado = computed(() =>
+  pedidosFiltrados.value.reduce((acc, p) => acc + (p.total || 0), 0)
+);
 
 const cantidadPedidos = computed(() => pedidosFiltrados.value.length);
 const totalPedidos = computed(() => pedidos.value.length);
 
-// 🔹 Suscripción en tiempo real
+// 🔹 Escucha en tiempo real
 let unsubscribe: (() => void) | null = null;
 
 onMounted(() => {
@@ -295,42 +271,47 @@ onUnmounted(() => {
 });
 </script>
 
+
 <style scoped>
 .contenedor-pedidos {
-  max-width: 700px;
+  max-width: 800px;
   margin: 2rem auto;
   padding: 1.5rem 2rem;
   background-color: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: #1f2937;
 }
 
+/* 🟦 Título principal */
 .titulo-pedidos {
   font-size: 2rem;
   font-weight: 700;
   color: #2563eb;
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.8rem;
   letter-spacing: 0.03em;
 }
 
+/* 🕐 Mensajes de estado */
 .mensaje-cargando,
 .mensaje-vacio {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 500;
   color: #6b7280;
   text-align: center;
   padding: 2rem 0;
 }
 
+/* 📋 Lista de pedidos */
 .lista-pedidos {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
+/* 🧾 Tarjeta de pedido */
 .tarjeta-pedido {
   background: #f9fafb;
   border-radius: 12px;
@@ -343,13 +324,13 @@ onUnmounted(() => {
 }
 
 .tarjeta-pedido:hover {
-  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.2);
 }
 
 @media (min-width: 640px) {
   .tarjeta-pedido {
     flex-direction: row;
-    align-items: center;
+    align-items: flex-start;
   }
 }
 
@@ -363,28 +344,6 @@ onUnmounted(() => {
   font-size: 1rem;
 }
 
-.link-comprobante {
-  color: #2563eb;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.link-comprobante:hover {
-  text-decoration: underline;
-}
-
-.estado-aprobado {
-  color: #16a34a; /* verde */
-  font-weight: 700;
-  text-transform: capitalize;
-}
-
-.estado-pendiente {
-  color: #ca8a04; /* amarillo */
-  font-weight: 700;
-  text-transform: capitalize;
-}
-
 .fecha-pedido {
   font-size: 0.85rem;
   color: #6b7280;
@@ -392,9 +351,24 @@ onUnmounted(() => {
   font-style: italic;
 }
 
+/* 🟩 Estados */
+.estado-aprobado {
+  color: #16a34a;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.estado-pendiente {
+  color: #ca8a04;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+/* ⚙️ Acciones */
 .acciones {
   margin-top: 1rem;
   display: flex;
+  gap: 0.6rem;
   justify-content: flex-start;
 }
 
@@ -407,7 +381,7 @@ onUnmounted(() => {
 
 .boton-aprobar {
   background-color: #2563eb;
-  color: white;
+  color: #fff;
   padding: 0.55rem 1.2rem;
   font-size: 1rem;
   border-radius: 8px;
@@ -420,15 +394,34 @@ onUnmounted(() => {
 
 .boton-aprobar:hover {
   background-color: #1d4ed8;
-  box-shadow: 0 6px 14px rgba(29, 78, 216, 0.6);
+  box-shadow: 0 6px 14px rgba(29, 78, 216, 0.5);
 }
+
+.boton-eliminar {
+  background-color: #dc2626;
+  color: white;
+  padding: 0.55rem 1.2rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.boton-eliminar:hover {
+  background-color: #b91c1c;
+  box-shadow: 0 6px 14px rgba(185, 28, 28, 0.5);
+}
+
+/* 📱 Enlaces */
 .link-whatsapp {
-  margin-left: 0.5rem;
+  margin-left: 0.4rem;
   font-size: 0.9rem;
-  color: #25d366; /* verde WhatsApp */
+  color: #25d366;
   text-decoration: none;
   font-weight: 600;
-  vertical-align: middle;
   transition: color 0.2s ease;
 }
 
@@ -436,62 +429,18 @@ onUnmounted(() => {
   color: #128c7e;
   text-decoration: underline;
 }
-.bloque-mensaje {
-  margin: 1rem auto 1rem;
-  max-width: 700px;
-  display: flex;
-  flex-direction: column;
-}
 
-.label-mensaje {
-  font-size: 1rem;
+.link-comprobante {
+  color: #2563eb;
+  text-decoration: none;
   font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: #1f2937;
 }
 
-.textarea-mensaje {
-  display: block;              /* asegura que respete los márgenes */
-  margin: 0 auto;              /* centra horizontalmente */
-  width: 80%;                  /* opcional: un poco más angosto para estética */
-  padding: 0.75rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 10px;
-  font-size: 1rem;
-  font-family: inherit;
-  resize: vertical;
-  background-color: #f9fafb;
-  color: #111827;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  transition: border-color 0.2s ease;
+.link-comprobante:hover {
+  text-decoration: underline;
 }
 
-.textarea-mensaje:focus {
-  outline: none;
-  border-color: #2563eb;
-  background-color: #fff;
-}
-
-.boton-masivo {
-  background-color: #10b981; /* verde */
-  color: white;
-  padding: 0.6rem 1.4rem;
-  font-size: 1rem;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  font-weight: 700;
-  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-  margin: 1rem auto 2rem;
-  display: block;
-}
-
-.boton-masivo:hover {
-  background-color: #059669;
-  box-shadow: 0 6px 14px rgba(5, 150, 105, 0.5);
-}
-
+/* 🧾 Comprobantes */
 .comprobantes-section {
   margin-top: 0.5rem;
 }
@@ -513,181 +462,183 @@ onUnmounted(() => {
 .comprobante-img {
   max-width: 180px;
   border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
-.total-recaudado {
-  font-size: 1.3rem;
-  font-weight: 700;
-  color: #16a34a;
-  text-align: center;
-  margin: 1rem 0 2rem;
-}
-.filtros {
-  margin: 1rem 0 2rem;
+/* 💬 Bloque de mensaje masivo */
+.bloque-mensaje {
+  margin: 1rem auto 1.5rem;
+  max-width: 700px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
-}
-
-.select-filtro {
-  padding: 0.4rem 0.7rem;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background: #fff;
-  font-size: 1rem;
-}
-
-.boton-eliminar {
-  background-color: #dc2626; /* rojo */
-  color: white;
-  padding: 0.55rem 1.2rem;
-  font-size: 1rem;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  font-weight: 700;
-  margin-left: 0.6rem;
-  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.boton-eliminar:hover {
-  background-color: #b91c1c;
-  box-shadow: 0 6px 14px rgba(185, 28, 28, 0.6);
-}
-/* 🆕 Estilos buscador */
-.buscador {
-  margin: 1.5rem 0;
   text-align: center;
 }
 
-.label-busqueda {
-  display: block;
+.label-mensaje {
   font-size: 1rem;
   font-weight: 600;
   margin-bottom: 0.5rem;
   color: #1f2937;
 }
 
-.input-busqueda {
-  width: 100%;
-  max-width: 400px;
-  padding: 0.6rem 1rem;
+.textarea-mensaje {
+  width: 90%;
+  max-width: 600px;
+  padding: 0.75rem 1rem;
   border: 1px solid #d1d5db;
   border-radius: 10px;
   font-size: 1rem;
-  font-family: inherit;
+  resize: vertical;
   background-color: #f9fafb;
   color: #111827;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   transition: border-color 0.2s ease;
 }
 
-.input-busqueda:focus {
+.textarea-mensaje:focus {
   outline: none;
   border-color: #2563eb;
   background-color: #fff;
-  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.2);
 }
-.filtro-whatsapp,
-.ordenar {
-  margin: 0.5rem 0 1.5rem;
+
+.boton-masivo {
+  background-color: #10b981;
+  color: white;
+  padding: 0.6rem 1.4rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  margin-top: 1rem;
+  box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.boton-masivo:hover {
+  background-color: #059669;
+  box-shadow: 0 6px 14px rgba(5, 150, 105, 0.5);
+}
+
+/* 🧮 Totales */
+.total-recaudado {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #16a34a;
+  text-align: center;
+  margin: 1.5rem 0 2rem;
+}
+
+/* 🔍 Bloque de filtros */
+/* 🧭 Barra superior de filtros */
+.barra-filtros {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
-}
-
-.label-whatsapp,
-.label-orden {
-  font-size: 1rem;
+  background: #2563eb;
+  color: white;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
   font-weight: 600;
-  color: #1f2937;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.3s ease;
 }
 
-.input-whatsapp,
-.select-orden {
-  padding: 0.4rem 0.7rem;
-  border-radius: 6px;
-  border: 1px solid #d1d5db;
-  background: #fff;
-  font-size: 1rem;
-  font-family: inherit;
-  transition: border-color 0.2s ease;
+.barra-filtros:hover {
+  background: #1e40af;
 }
 
-.input-whatsapp:focus,
-.select-orden:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.2);
+.icono-flecha {
+  transition: transform 0.3s ease;
+  display: inline-block;
 }
-/* 🧭 Contenedor general de filtros */
+
+.icono-flecha.abierto {
+  transform: rotate(180deg);
+}
+
+/* 🔍 Contenedor de filtros (optimizado del diseño anterior) */
 .contenedor-filtros {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.5rem;
   align-items: flex-end;
   justify-content: space-between;
-  margin: 1.5rem 0 2rem;
-  padding: 1rem;
-  background: #f3f4f6;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: #f9fafb;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
 }
 
-/* Cada ítem del filtro */
 .filtro-item {
   display: flex;
   flex-direction: column;
-  flex: 1 1 150px;
-  min-width: 140px;
+  flex: 1 1 140px;
+  min-width: 130px;
 }
 
-/* Etiquetas */
 .label-filtro {
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  margin-bottom: 0.3rem;
-  color: #1f2937;
+  margin-bottom: 0.2rem;
+  color: #374151;
 }
 
-/* Campos */
 .input-filtro,
 .select-filtro {
-  padding: 0.5rem 0.7rem;
-  border-radius: 8px;
+  padding: 0.35rem 0.55rem;
+  border-radius: 6px;
   border: 1px solid #d1d5db;
   background: #fff;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-family: inherit;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.2s ease;
 }
 
 .input-filtro:focus,
 .select-filtro:focus {
   outline: none;
   border-color: #2563eb;
-  box-shadow: 0 2px 5px rgba(37, 99, 235, 0.25);
 }
 
-/* 🖥️ Desktop: todos los filtros en una sola fila */
-@media (min-width: 640px) {
-  .contenedor-filtros {
-    flex-wrap: nowrap;
-  }
-  .filtro-item {
-    flex: 1;
-  }
+/* 🎞️ Animación de apertura/cierre */
+.deslizar-enter-active,
+.deslizar-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+.deslizar-enter-from,
+.deslizar-leave-to {
+  opacity: 0;
+  max-height: 0;
+}
+.deslizar-enter-to,
+.deslizar-leave-from {
+  opacity: 1;
+  max-height: 300px;
 }
 
-/* 📱 Mobile: filtros apilados */
-@media (max-width: 639px) {
+/* 📱 Mobile */
+@media (max-width: 767px) {
   .contenedor-filtros {
     flex-direction: column;
     align-items: stretch;
+    background: #ffffff;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    padding: 0.5rem 0.75rem;
+    gap: 0.4rem;
   }
   .filtro-item {
     width: 100%;
+  }
+  .input-filtro,
+  .select-filtro {
+    font-size: 0.85rem;
+    padding: 0.3rem 0.5rem;
   }
 }
 

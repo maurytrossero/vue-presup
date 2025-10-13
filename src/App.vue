@@ -22,11 +22,16 @@
           <li>
             <router-link to="/foto-pedidos/editar" @click="menuOpen = false">Editar Pedido de fotos</router-link>
           </li>
+          <li>
+            <router-link to="/foto-pedidos/seleccionar" @click="menuOpen = false">
+              Seleccionar Fotos
+            </router-link>
+          </li>
           <li v-if="isAuthenticated">
-          <router-link to="/foto-pedidos/seleccionar" @click="menuOpen = false">
-            Seleccionar Fotos
-          </router-link>
-        </li>
+            <router-link to="/seleccion" @click="menuOpen = false">
+              Vista de Selección
+            </router-link>
+          </li>
 
         </ul>
 
