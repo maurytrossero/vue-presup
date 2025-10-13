@@ -436,5 +436,23 @@ onUnmounted(() => window.removeEventListener('keydown', manejarTeclado));
   background-color: #059669;
   transform: translateX(-50%) scale(1.04);
 }
+/* Sección de fotos seleccionadas anclada arriba */
+.seleccionadas {
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 100;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  margin-bottom: 1rem;
+    transition: box-shadow 0.3s ease, background-color 0.3s ease;
+
+}
+
+/* Ajuste visual para que no ocupe demasiado espacio */
+.seleccionadas h3 {
+  margin-bottom: 0.5rem;
+}
 
 </style>
