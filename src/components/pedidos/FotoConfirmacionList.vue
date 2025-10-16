@@ -98,9 +98,14 @@
               <ul class="comprobantes-lista">
                 <li v-for="c in pedido.comprobantes" :key="c.nombreArchivo">
                   <a :href="c.url" target="_blank" class="link-comprobante">{{ c.nombreArchivo }}</a>
-                  <div class="comprobante-preview">
-                    <img :src="c.url" alt="Comprobante" class="comprobante-img" />
-                  </div>
+                    <div class="comprobante-preview">
+                      <img
+                        :src="c.url"
+                        alt="Comprobante"
+                        class="comprobante-img"
+                        @click="verImagen(c.url)"
+                      />
+                    </div>
                 </li>
               </ul>
             </div>
@@ -144,6 +149,19 @@
       <br />
       📦 <strong>Mostrando:</strong> {{ cantidadPedidos }} pedidos de {{ totalPedidos }}
     </div>
+
+    <!-- 🖼️ Modal de imagen ampliada -->
+    <div
+      v-if="imagenAmpliada"
+      class="modal-overlay"
+      @click.self="cerrarImagen"
+    >
+      <div class="modal-contenido">
+        <img :src="imagenAmpliada" alt="Imagen ampliada" class="modal-img" />
+        <button @click="cerrarImagen" class="boton-cerrar">✖</button>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -159,6 +177,15 @@ const orden = ref('asc');
 const mensajeMasivo = ref('Hola, te confirmamos que recibimos tu pedido de fotos de confirmación. Muchas gracias 🙌');
 const pedidos = ref<any[]>([]);
 const loading = ref(true);
+const imagenAmpliada = ref<string | null>(null)
+
+function verImagen(url: string) {
+  imagenAmpliada.value = url
+}
+
+function cerrarImagen() {
+  imagenAmpliada.value = null
+}
 
 // ✅ Computed para autenticación
 const isAuthenticated = computed(() => localStorage.getItem('token') !== null);
@@ -639,6 +666,72 @@ onUnmounted(() => {
     font-size: 0.85rem;
     padding: 0.3rem 0.5rem;
   }
+}
+/* 🖼️ Modal de imagen ampliada */
+/* 🖼️ Modal de imagen ampliada (mejorado con scroll) */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  overflow: auto; /* ✅ permite desplazarse si la imagen es más grande */
+  padding: 2rem; /* deja margen visual */
+  animation: fadeIn 0.3s ease;
+}
+
+.modal-contenido {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.modal-img {
+  max-width: 95vw;
+  max-height: 95vh;
+  border-radius: 12px;
+  box-shadow: 0 0 25px rgba(0, 0, 0, 0.4);
+  animation: zoomIn 0.3s ease;
+  object-fit: contain; /* ✅ asegura que no se corte */
+}
+
+.boton-cerrar {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #ef4444;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: background 0.2s ease;
+}
+
+.boton-cerrar:hover {
+  background: #dc2626;
+}
+
+/* ✨ Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes zoomIn {
+  from { transform: scale(0.9); opacity: 0.8; }
+  to { transform: scale(1); opacity: 1; }
 }
 
 </style>
