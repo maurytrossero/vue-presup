@@ -32,7 +32,6 @@
               <option value="">Todos</option>
               <option value="aprobado">Aprobado</option>
               <option value="pendiente">Pendiente</option>
-              <option value="rechazado">Rechazado</option>
             </select>
           </div>
 

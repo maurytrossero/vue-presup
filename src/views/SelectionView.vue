@@ -2,6 +2,18 @@
   <div class="contenedor-pedidos">
     <h2 class="titulo-pedidos">Listado de Pedidos con Fotos Seleccionadas</h2>
 
+    <!-- 💬 Cuadro de mensaje general -->
+    <div v-if="isAuthenticated" class="bloque-mensaje">
+      <label for="mensaje" class="label-mensaje">Mensaje para enviar por WhatsApp:</label>
+      <textarea
+        id="mensaje"
+        v-model="mensajeWhatsapp"
+        class="textarea-mensaje"
+        rows="4"
+        placeholder="Escribí el mensaje que querés enviar al contacto..."
+      ></textarea>
+    </div>
+
     <!-- 🔎 Buscadores -->
     <div class="buscador">
       <label for="busqueda" class="label-busqueda">Buscar pedido por nombre:</label>
@@ -139,6 +151,7 @@ const busqueda = ref('')
 const busquedaWhatsapp = ref('')
 const loading = ref(true)
 const fotoAmpliada = ref<string | null>(null)
+const mensajeWhatsapp = ref('Hola 😊, notamos que aún no seleccionaste tus fotos. Te pedimos hacerlo a la brevedad.')
 
 const isAuthenticated = computed(() => localStorage.getItem('token') !== null)
 
@@ -209,9 +222,11 @@ async function eliminarPedidoConfirmado(id: string, nombre: string) {
 
 function whatsappLink(whatsapp: string | undefined, nombre: string) {
   const telefono = (whatsapp || '').replace(/[^0-9]/g, '')
-  const mensaje = `Hola ${nombre}, te confirmamos que recibimos tu pedido de fotos. 🙌`
-  return `https://wa.me/${telefono}?text=${encodeURIComponent(mensaje)}`
+  const mensaje = mensajeWhatsapp.value ? `${mensajeWhatsapp.value}` : ''
+  const url = `https://wa.me/${telefono}${mensaje ? `?text=${encodeURIComponent(mensaje)}` : ''}`
+  return url
 }
+
 
 function verAmpliada(url: string) {
   fotoAmpliada.value = url
@@ -448,5 +463,66 @@ onUnmounted(() => {
   margin-top: 0.2rem;
   word-break: break-all;
 }
+.mensaje-general {
+  background: #f1f5f9;
+  border: 2px solid #2563eb;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin: 0 auto 2rem auto; /* centra horizontalmente */
+  max-width: 600px; /* limita el ancho para que no se vea tan extendido */
+  text-align: center; /* centra el texto del label y la nota */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 
+.label-busqueda {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.bloque-mensaje {
+  margin: 1rem auto 1.5rem;
+  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.label-mensaje {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #1f2937;
+}
+
+.textarea-mensaje {
+  width: 90%;
+  max-width: 600px;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 1rem;
+  resize: vertical;
+  background-color: #f9fafb;
+  color: #111827;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.2s ease;
+}
+
+.textarea-mensaje:focus {
+  outline: none;
+  border-color: #2563eb;
+  background-color: #fff;
+}
+
+.nota {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 0.6rem;
+  text-align: center;
+}
 </style>
+
