@@ -56,8 +56,13 @@
 
     <!-- 🧾 Listado -->
     <div v-else class="lista-pedidos">
-      <div v-for="pedido in pedidosFiltrados" :key="pedido.id" class="tarjeta-pedido">
+      <div
+        v-for="(pedido, i) in pedidosFiltrados"
+        :key="pedido.id"
+        class="tarjeta-pedido"
+      >
         <div class="info-pedido">
+          <p class="numero-pedido"><strong>Pedido N° {{ i + 1 }}</strong></p>
           <p><strong>Nombre:</strong> {{ pedido.nombre }}</p>
 
           <template v-if="isAuthenticated">
@@ -95,11 +100,16 @@
             <h4>Fotos Seleccionadas ({{ pedido.seleccionadas.length }})</h4>
             <div class="grid-fotos">
               <div
-                v-for="(url, i) in pedido.seleccionadas"
-                :key="i"
+                v-for="(url, j) in pedido.seleccionadas"
+                :key="j"
                 class="foto-wrapper"
               >
-                <img :src="url" alt="Foto seleccionada" class="foto-mini" @click="verAmpliada(url)" />
+                <img
+                  :src="url"
+                  alt="Foto seleccionada"
+                  class="foto-mini"
+                  @click="verAmpliada(url)"
+                />
                 <p class="nombre-foto">{{ obtenerNombreArchivo(url) }}</p>
               </div>
             </div>
@@ -126,9 +136,13 @@
       </div>
     </div>
 
-    <!-- 🧮 Total -->
+    <!-- 🧮 Totales -->
     <div v-if="isAuthenticated && pedidosFiltrados.length" class="total-recaudado">
       💰 <strong>Total recaudado:</strong> ${{ totalRecaudado }}
+    </div>
+
+    <div v-if="pedidosFiltrados.length" class="total-pedidos">
+      📦 <strong>Total de pedidos mostrados:</strong> {{ pedidosFiltrados.length }}
     </div>
 
     <!-- 🔍 Modal Foto Ampliada -->
@@ -524,5 +538,18 @@ onUnmounted(() => {
   margin-top: 0.6rem;
   text-align: center;
 }
+.numero-pedido {
+  font-size: 0.95rem;
+  color: #1e3a8a;
+  margin-bottom: 0.3rem;
+}
+
+.total-pedidos {
+  margin-top: 0.8rem;
+  text-align: center;
+  font-size: 1rem;
+  color: #1d4ed8;
+}
+
 </style>
 
