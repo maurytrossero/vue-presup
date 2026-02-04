@@ -107,8 +107,8 @@ export default defineComponent({
   },
   data() {
     return {
-      precioBase: 124000,
-      costoHoraExtra: 36000,
+      precioBase: 150000,
+      costoHoraExtra: 45000,
       mesesProyectados: 0,
       inflacionAnual: 36.6,
       selectedItems: [] as string[],
