@@ -25,8 +25,9 @@
     <div class="form-agendar">
       <h3>➕ Nuevo Evento</h3>
       <div class="inputs-grid">
-        <input v-model="nuevoEvento.cliente_nombre" placeholder="Nombre del Cliente" />
-        <input v-model="nuevoEvento.fecha_evento" type="date" title="Fecha del Evento/Entrega" />
+        <input v-model="nuevoEvento.cliente_nombre" placeholder="Cliente / Contacto (Ej: Leticia)" />
+        <input v-model="nuevoEvento.titulo_evento" placeholder="Título del Evento (Ej: Egreso Promo 27)" />
+        <input v-model="nuevoEvento.fecha_evento" type="date" title="Fecha del Evento" />
         <input v-model="nuevoEvento.telefono_contacto" placeholder="Teléfono" />
         
         <select v-model="nuevoEvento.tipo_servicio" title="Tipo de Evento">
@@ -47,6 +48,10 @@
 
         <input v-model.number="nuevoEvento.total_presupuesto" type="number" placeholder="Monto Total Acordado ($)" />
       </div>
+      
+      <!-- Nuevo campo de descripción / notas -->
+      <textarea v-model="nuevoEvento.descripcion" placeholder="Información adicional, horarios, dirección o notas (Opcional)" class="input-descripcion"></textarea>
+
       <button class="btn-guardar" @click="guardarEvento">Agendar Evento</button>
     </div>
 
@@ -55,7 +60,7 @@
     <!-- BARRA DE BUSCADOR Y FILTROS -->
     <div class="filtros-container">
       <div class="search-box">
-        <input v-model="busqueda" type="text" placeholder="🔍 Buscar por cliente o teléfono..." />
+        <input v-model="busqueda" type="text" placeholder="🔍 Buscar por cliente, evento o teléfono..." />
       </div>
       <div class="filter-box">
         <label>Estado: </label>
@@ -74,6 +79,7 @@
         <thead>
           <tr>
             <th>Cliente</th>
+            <th>Título del Evento</th>
             <th>Fecha</th>
             <th>Servicio</th>
             <th>Cobertura</th>
@@ -86,7 +92,15 @@
         </thead>
         <tbody>
           <tr v-for="evento in eventosFiltrados" :key="evento.id">
-            <td data-label="Cliente"><strong>{{ evento.cliente_nombre }}</strong></td>
+            <td data-label="Cliente">
+              <strong>{{ evento.cliente_nombre }}</strong>
+            </td>
+            <td data-label="Título del Evento">
+              {{ evento.titulo_evento || '- - -' }}
+              <div v-if="evento.descripcion" class="text-notas" :title="evento.descripcion">
+                📝 {{ evento.descripcion.substring(0, 20) }}{{ evento.descripcion.length > 20 ? '...' : '' }}
+              </div>
+            </td>
             <td data-label="Fecha" class="nowrap">{{ formatearFecha(evento.fecha_evento) }}</td>
             <td data-label="Servicio">{{ evento.tipo_servicio }}</td>
             <td data-label="Cobertura">{{ evento.tipo_cobertura }}</td>
@@ -100,7 +114,7 @@
               <button class="btn-pago" title="Registrar Entrega de Dinero" @click="abrirPago(evento)">+ Entrega</button>
               <button class="btn-historial" title="Ver Pagos y Recibos Emitidos" @click="abrirHistorial(evento)">📋 Pagos</button>
               <button class="btn-editar" title="Editar Datos del Evento" @click="abrirEdicionEvento(evento)">✏️ Editar</button>
-              <button class="btn-eliminar" title="Eliminar Evento" @click="borrarEvento(evento.id, evento.cliente_nombre)">🗑️</button>
+              <button class="btn-eliminar" title="Eliminar Evento" @click="borrarEvento(evento.id, evento.titulo_evento || evento.cliente_nombre)">🗑️</button>
             </td>
           </tr>
         </tbody>
@@ -150,7 +164,7 @@
     <div v-if="modalHistorialVisible" class="modal-overlay">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>Entregas y Recibos: {{ eventoActivo?.cliente_nombre }}</h3>
+          <h3>Entregas y Recibos: {{ eventoActivo?.titulo_evento || eventoActivo?.cliente_nombre }}</h3>
           <button class="btn-cerrar-modal" @click="cerrarModales">✖</button>
         </div>
         
@@ -189,12 +203,18 @@
           <button class="btn-cerrar-modal" @click="cerrarModales">✖</button>
         </div>
         <div class="form-editar">
-          <label>Cliente</label>
+          <label>Cliente (Contacto)</label>
           <input v-model="eventoEdicion.cliente_nombre" />
+          
+          <label>Título del Evento</label>
+          <input v-model="eventoEdicion.titulo_evento" />
+          
           <label>Fecha del Evento</label>
           <input v-model="eventoEdicion.fecha_evento" type="date" />
+          
           <label>Teléfono</label>
           <input v-model="eventoEdicion.telefono_contacto" />
+          
           <label>Tipo de Evento</label>
           <select v-model="eventoEdicion.tipo_servicio">
             <option value="15 Años">15 Años</option>
@@ -205,12 +225,17 @@
             <option value="Institucional">Institucional</option>
             <option value="Otro">Otro</option>
           </select>
+          
           <label>Cobertura</label>
           <select v-model="eventoEdicion.tipo_cobertura">
             <option value="Foto">Solo Fotografía</option>
             <option value="Video">Solo Video</option>
             <option value="Foto y Video">Foto y Video</option>
           </select>
+          
+          <label>Notas / Descripción (Opcional)</label>
+          <textarea v-model="eventoEdicion.descripcion" placeholder="Detalles extra del evento..."></textarea>
+
           <label>Total Presupuesto ($)</label>
           <input v-model.number="eventoEdicion.total_presupuesto" type="number" />
           
@@ -254,7 +279,7 @@ const modalConfigVisible = ref(false);
 const eventoActivo = ref<any>(null);
 const eventoEdicion = ref<any>({});
 
-// Perfil predeterminado para Mauricio / MT Producciones
+// Perfil predeterminado
 const perfilUsuario = ref({
   nombre_empresa: 'MT Producciones',
   nombre_firmante: 'Mauricio Trossero',
@@ -262,14 +287,16 @@ const perfilUsuario = ref({
   logo_url: 'https://dl.dropboxusercontent.com/scl/fi/88du6azdw0ra19avnk31l/mt.jpg?rlkey=aqiids5q04l4fmymp0j4bjhru&st=avkk9osm'
 });
 
-// Estado inicial del nuevo evento
+// Estado inicial del nuevo evento con Título y Descripción
 const nuevoEvento = ref({
   cliente_nombre: '',
+  titulo_evento: '',
   fecha_evento: '',
   telefono_contacto: '',
   tipo_servicio: '15 Años',
   tipo_cobertura: 'Foto y Video',
-  total_presupuesto: null as number | null
+  total_presupuesto: null as number | null,
+  descripcion: ''
 });
 
 onMounted(() => {
@@ -375,8 +402,10 @@ const formatearFecha = (fechaStr: string): string => {
 // --- EVENTOS FILTRADOS EN TIEMPO REAL ---
 const eventosFiltrados = computed(() => {
   return eventos.value.filter(ev => {
-    const matchBusqueda = ev.cliente_nombre?.toLowerCase().includes(busqueda.value.toLowerCase()) ||
-                          ev.telefono_contacto?.includes(busqueda.value);
+    const term = busqueda.value.toLowerCase();
+    const matchBusqueda = ev.cliente_nombre?.toLowerCase().includes(term) ||
+                          ev.titulo_evento?.toLowerCase().includes(term) ||
+                          ev.telefono_contacto?.includes(term);
     const matchEstado = filtroEstado.value === 'Todos' || ev.estado_pago === filtroEstado.value;
     return matchBusqueda && matchEstado;
   });
@@ -395,8 +424,27 @@ const totalPresupuestado = computed(() => {
 
 // --- GESTIÓN DE EVENTOS ---
 const guardarEvento = async () => {
-  if (!nuevoEvento.value.cliente_nombre || !nuevoEvento.value.fecha_evento || !nuevoEvento.value.total_presupuesto) {
-    return Swal.fire('Faltan datos', 'Nombre, fecha y monto total son obligatorios.', 'warning');
+  if (!nuevoEvento.value.cliente_nombre || !nuevoEvento.value.titulo_evento || !nuevoEvento.value.fecha_evento || !nuevoEvento.value.total_presupuesto) {
+    return Swal.fire('Faltan datos', 'Cliente, Título, Fecha y Monto Total son obligatorios.', 'warning');
+  }
+
+  // ALERTA DE COINCIDENCIA DE FECHAS
+  const fechaSeleccionada = nuevoEvento.value.fecha_evento;
+  const eventoExistente = eventos.value.find(ev => ev.fecha_evento === fechaSeleccionada);
+
+  if (eventoExistente) {
+    const confirmar = await Swal.fire({
+      title: '📅 Coincidencia de Fecha',
+      html: `Ya tienes agendado el evento <b>${eventoExistente.titulo_evento || eventoExistente.cliente_nombre}</b> para este mismo día.<br><br>¿Deseas registrar este nuevo evento de todos modos (ej. para enviar un delegado)?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sí, agendar igual',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#f59e0b'
+    });
+    
+    // Si el usuario cancela, detenemos la función
+    if (!confirmar.isConfirmed) return;
   }
 
   const eventoParaGuardar = {
@@ -410,7 +458,18 @@ const guardarEvento = async () => {
   try {
     await guardarPresupuestoAdmin(eventoParaGuardar);
     Swal.fire('¡Agendado!', 'El evento se guardó correctamente.', 'success');
-    nuevoEvento.value = { cliente_nombre: '', fecha_evento: '', telefono_contacto: '', tipo_servicio: '15 Años', tipo_cobertura: 'Foto y Video', total_presupuesto: null };
+    
+    // Limpiamos el formulario
+    nuevoEvento.value = { 
+      cliente_nombre: '', 
+      titulo_evento: '',
+      fecha_evento: '', 
+      telefono_contacto: '', 
+      tipo_servicio: '15 Años', 
+      tipo_cobertura: 'Foto y Video', 
+      total_presupuesto: null,
+      descripcion: '' 
+    };
     cargarEventos();
   } catch (error) {
     Swal.fire('Error', 'Hubo un problema al guardar.', 'error');
@@ -632,8 +691,8 @@ const generarReciboPDF = (pago: any, indexPago = 0, accion: 'descargar' | 'previ
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
     doc.text(`Cliente: ${evento.cliente_nombre}`, 20, 75);
-    doc.text(`Evento: ${evento.tipo_servicio}`, 20, 83);
-    doc.text(`Cobertura: ${evento.tipo_cobertura || 'No especificado'}`, 20, 91);
+    doc.text(`Evento: ${evento.titulo_evento || 'No especificado'}`, 20, 83);
+    doc.text(`Tipo de Servicio: ${evento.tipo_servicio} - ${evento.tipo_cobertura || 'No especificado'}`, 20, 91);
     doc.text(`Fecha del Evento: ${formatearFecha(evento.fecha_evento)}`, 20, 99);
 
     // 4. Caja de Montos
@@ -680,7 +739,7 @@ const generarReciboPDF = (pago: any, indexPago = 0, accion: 'descargar' | 'previ
       window.open(doc.output('bloburl'), '_blank');
     } else {
       const fechaLimpia = (pago.fecha || '').split(' ')[0].replaceAll('/', '-');
-      const nombreArchivo = `Recibo_${evento.cliente_nombre.replace(/\s+/g, '_')}_${fechaLimpia}.pdf`;
+      const nombreArchivo = `Recibo_${(evento.titulo_evento || evento.cliente_nombre).replace(/\s+/g, '_')}_${fechaLimpia}.pdf`;
       doc.save(nombreArchivo);
     }
   }
@@ -708,9 +767,13 @@ const generarReciboPDF = (pago: any, indexPago = 0, accion: 'descargar' | 'previ
 /* Formularios */
 .form-agendar { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
 .form-editar label { display: block; font-weight: bold; margin-top: 10px; font-size: 14px; }
-.form-editar input, .form-editar select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
-.inputs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 15px; }
+.form-editar input, .form-editar select, .form-editar textarea { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-family: inherit; }
+.form-editar textarea { resize: vertical; min-height: 80px; }
+.inputs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 10px; }
 .inputs-grid input, .inputs-grid select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; }
+
+.input-descripcion { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 15px; box-sizing: border-box; font-family: inherit; resize: vertical; min-height: 60px; }
+
 .btn-guardar { width: 100%; background: #007bff; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 .btn-guardar:hover { background: #0056b3; }
 .btn-cancelar { width: 100%; background: #6c757d; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 8px; }
@@ -730,10 +793,11 @@ hr { margin: 20px 0; border: 0; border-top: 1px solid #ddd; }
 /* Tabla Principal y Layout Clásico (PC) */
 .tabla-responsive { width: 100%; overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 14px; }
-th, td { border: 1px solid #eee; padding: 10px 12px; text-align: left; }
+th, td { border: 1px solid #eee; padding: 10px 12px; text-align: left; vertical-align: middle; }
 th { background-color: #f1f1f1; font-weight: bold; color: #555; }
 .th-acciones { text-align: center; width: 280px; }
 .deuda { color: #dc3545; font-weight: bold; }
+.text-notas { font-size: 11px; color: #666; margin-top: 4px; font-style: italic; }
 
 /* Badges de Estado */
 .badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; display: inline-block; text-align: center; }
@@ -767,7 +831,6 @@ th { background-color: #f1f1f1; font-weight: bold; color: #555; }
 .btn-preview { background: #17a2b8; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
 .btn-pdf { background: #343a40; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
 .btn-eliminar-pago { background: #dc3545; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; }
-
 
 /* ====================================================
    DISEÑO RESPONSIVE "CARD LAYOUT" PARA MÓVILES (FIXED OVERFLOW)

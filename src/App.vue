@@ -2,8 +2,7 @@
   <div id="app">
     <nav class="navbar">
       <!-- Título principal -->
-      <div class="logo">MT Producciones</div>
-      
+      <div class="brand">{{ nombreEmpresaGlobal }}</div>      
       <ul class="nav-links" :class="{ 'nav-active': menuOpen }">
         <!-- Botón X para cerrar en móvil -->
         <li class="close-btn" @click="menuOpen = false">✖</li>
@@ -42,6 +41,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+import { obtenerConfigUsuario } from '@/services/presupuestoService'; // <-- Se importó el servicio correctamente
 
 const menuOpen = ref(false);
 const isAuthenticated = ref(false);
@@ -49,11 +49,32 @@ const router = useRouter();
 const auth = getAuth();
 
 // Escucha en tiempo real si hay sesión iniciada en Firebase
+const nombreEmpresaGlobal = ref('Cargando...');
+
 onMounted(() => {
-  onAuthStateChanged(auth, (user) => {
-    isAuthenticated.value = !!user;
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      isAuthenticated.value = true;
+      // Si hay un usuario logueado, buscamos su perfil
+      const configGuardada = await obtenerConfigUsuario(user.uid);
+      
+      if (configGuardada && configGuardada.nombre_empresa) {
+        // Muestra la marca del colega
+        nombreEmpresaGlobal.value = configGuardada.nombre_empresa;
+      } else if (user.email === 'mtproduccioneshd@gmail.com') {
+        // Tu cuenta por defecto
+        nombreEmpresaGlobal.value = 'MT Producciones';
+      } else {
+        // Colega nuevo sin configurar
+        nombreEmpresaGlobal.value = 'Panel de Gestión';
+      }
+    } else {
+      // Si nadie inició sesión (pantalla de Login)
+      isAuthenticated.value = false;
+      nombreEmpresaGlobal.value = 'Sistema de Presupuestos';
+    }
   });
-});
+}); // <-- Faltaba cerrar el onMounted aquí
 
 const logout = async () => {
   try {
@@ -70,7 +91,7 @@ const logout = async () => {
 /* Fuente base para la navbar */
 .navbar,
 .nav-links li a,
-.logo {
+.brand {
   font-family: 'Inter', sans-serif;
 }
 
@@ -88,8 +109,8 @@ const logout = async () => {
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-/* Logo */
-.logo {
+/* Logo (Brand) */
+.brand {
   font-weight: 700;
   font-size: 1.5rem;
   color: white;
