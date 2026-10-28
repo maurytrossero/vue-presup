@@ -97,9 +97,9 @@
               <span :class="['badge', evento.estado_pago.toLowerCase()]">{{ evento.estado_pago }}</span>
             </td>
             <td data-label="Acciones" class="acciones-celda">
-              <button class="btn-pago" title="Registrar Pago" @click="abrirPago(evento)">+ Pago</button>
-              <button class="btn-historial" title="Ver Pagos y Recibos" @click="abrirHistorial(evento)">Pagos</button>
-              <button class="btn-editar" title="Editar Datos del Evento" @click="abrirEdicionEvento(evento)">✏️ Edit</button>
+              <button class="btn-pago" title="Registrar Entrega de Dinero" @click="abrirPago(evento)">+ Entrega</button>
+              <button class="btn-historial" title="Ver Pagos y Recibos Emitidos" @click="abrirHistorial(evento)">📋 Pagos</button>
+              <button class="btn-editar" title="Editar Datos del Evento" @click="abrirEdicionEvento(evento)">✏️ Editar</button>
               <button class="btn-eliminar" title="Eliminar Evento" @click="borrarEvento(evento.id, evento.cliente_nombre)">🗑️</button>
             </td>
           </tr>
@@ -111,7 +111,7 @@
     </div>
 
     <!-- MODAL DE CONFIGURACIÓN / MI PERFIL -->
-    <div v-if="modalConfigVisible" class="modal-overlay" @click.self="cerrarModales">
+    <div v-if="modalConfigVisible" class="modal-overlay">
       <div class="modal-content">
         <div class="modal-header">
           <h3>⚙️ Personalizar Mi Perfil y Recibos</h3>
@@ -124,6 +124,9 @@
           <label>Nombre de la Firma (en el recibo)</label>
           <input v-model="perfilUsuario.nombre_firmante" placeholder="Ej: Mauricio Trossero" />
 
+          <label>Rubro / Descripción del Servicio (en pie de recibo)</label>
+          <input v-model="perfilUsuario.rubro_servicio" placeholder="Ej: Fotografía y Video Profesional" />
+
           <label>URL de tu Logo (Google Drive, Dropbox, o web)</label>
           <input v-model="perfilUsuario.logo_url" placeholder="Pega aquí el enlace de tu logo" />
           <small style="color: #666; display: block; margin-top: 3px;">
@@ -135,16 +138,19 @@
             <img :src="convertirUrlImagen(perfilUsuario.logo_url)" alt="Logo Preview" style="max-height: 70px; object-fit: contain; border: 1px dashed #ccc; padding: 5px; border-radius: 4px;" />
           </div>
 
-          <button class="btn-guardar" style="margin-top: 20px;" @click="guardarPerfil">Guardar Configuración</button>
+          <div class="modal-actions-footer">
+            <button class="btn-guardar" @click="guardarPerfil">Guardar Configuración</button>
+            <button class="btn-cancelar" @click="cerrarModales">Cancelar</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- MODAL DE HISTORIAL DE PAGOS -->
-    <div v-if="modalHistorialVisible" class="modal-overlay" @click.self="cerrarModales">
+    <!-- MODAL DE HISTORIAL DE PAGOS Y RECIBOS -->
+    <div v-if="modalHistorialVisible" class="modal-overlay">
       <div class="modal-content">
         <div class="modal-header">
-          <h3>Pagos: {{ eventoActivo?.cliente_nombre }}</h3>
+          <h3>Entregas y Recibos: {{ eventoActivo?.cliente_nombre }}</h3>
           <button class="btn-cerrar-modal" @click="cerrarModales">✖</button>
         </div>
         
@@ -162,7 +168,8 @@
                 <td data-label="Fecha y Hora">{{ pago.fecha }}</td>
                 <td data-label="Monto Abonado" class="nowrap" style="color: green; font-weight: bold;">$ {{ formatearMoneda(pago.monto) }}</td>
                 <td data-label="Acciones" class="acciones-modal">
-                  <button class="btn-pdf" @click="generarReciboPDF(pago)">📄 Recibo PDF</button>
+                  <button class="btn-preview" title="Ver Recibo en Pestaña Nueva" @click="generarReciboPDF(pago, index, 'previsualizar')">👁️ Ver</button>
+                  <button class="btn-pdf" title="Descargar PDF" @click="generarReciboPDF(pago, index, 'descargar')">📥 Descargar</button>
                   <button class="btn-editar" title="Modificar monto/fecha" @click="editarPago(index)">✏️</button>
                   <button class="btn-eliminar-pago" title="Eliminar este pago" @click="eliminarPago(index)">❌</button>
                 </td>
@@ -175,7 +182,7 @@
     </div>
 
     <!-- MODAL DE EDICIÓN DE EVENTO -->
-    <div v-if="modalEditarVisible" class="modal-overlay" @click.self="cerrarModales">
+    <div v-if="modalEditarVisible" class="modal-overlay">
       <div class="modal-content">
         <div class="modal-header">
           <h3>Editar Evento</h3>
@@ -207,7 +214,10 @@
           <label>Total Presupuesto ($)</label>
           <input v-model.number="eventoEdicion.total_presupuesto" type="number" />
           
-          <button class="btn-guardar" style="margin-top: 15px;" @click="guardarEdicionEvento">Guardar Cambios</button>
+          <div class="modal-actions-footer">
+            <button class="btn-guardar" @click="guardarEdicionEvento">Guardar Cambios</button>
+            <button class="btn-cancelar" @click="cerrarModales">Cancelar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -248,6 +258,7 @@ const eventoEdicion = ref<any>({});
 const perfilUsuario = ref({
   nombre_empresa: 'MT Producciones',
   nombre_firmante: 'Mauricio Trossero',
+  rubro_servicio: 'Fotografía y Video Profesional',
   logo_url: 'https://dl.dropboxusercontent.com/scl/fi/88du6azdw0ra19avnk31l/mt.jpg?rlkey=aqiids5q04l4fmymp0j4bjhru&st=avkk9osm'
 });
 
@@ -289,17 +300,17 @@ const cargarPerfilUsuario = async () => {
     if (configGuardada) {
       perfilUsuario.value = { ...perfilUsuario.value, ...configGuardada };
     } else if (user.email === 'mtproduccioneshd@gmail.com') {
-      // Si eres tú y no habías guardado cambios antes, mantiene tus valores por defecto
       perfilUsuario.value = {
         nombre_empresa: 'MT Producciones',
         nombre_firmante: 'Mauricio Trossero',
+        rubro_servicio: 'Fotografía y Video Profesional',
         logo_url: 'https://dl.dropboxusercontent.com/scl/fi/88du6azdw0ra19avnk31l/mt.jpg?rlkey=aqiids5q04l4fmymp0j4bjhru&st=avkk9osm'
       };
     } else {
-      // Si es un usuario nuevo
       perfilUsuario.value = {
-        nombre_empresa: 'Mi Empresa de Fotografía',
+        nombre_empresa: user.displayName || 'Mi Estudio',
         nombre_firmante: user.displayName || 'El Administrador',
+        rubro_servicio: 'Fotografía Profesional',
         logo_url: ''
       };
     }
@@ -328,7 +339,6 @@ const guardarPerfil = async () => {
 const convertirUrlImagen = (url: string): string => {
   if (!url) return '';
 
-  // Si es enlace de Google Drive
   if (url.includes('drive.google.com') && url.includes('/file/d/')) {
     const partes = url.split('/file/d/');
     if (partes[1]) {
@@ -337,7 +347,6 @@ const convertirUrlImagen = (url: string): string => {
     }
   }
 
-  // Si es enlace de Dropbox
   if (url.includes('dropbox.com')) {
     return url.replace('dl=0', 'raw=1');
   }
@@ -455,7 +464,7 @@ const guardarEdicionEvento = async () => {
 // --- GESTIÓN DE PAGOS ---
 const abrirPago = async (evento: any) => {
   const { value: montoMandar } = await Swal.fire({
-    title: 'Registrar Pago',
+    title: 'Registrar Pago / Entrega',
     text: `Saldo actual: $ ${formatearMoneda(evento.saldo_pendiente)}`,
     input: 'number',
     inputPlaceholder: '¿Cuánto entrega hoy?',
@@ -561,10 +570,14 @@ const procesarCambiosPago = async (evento: any, nuevoHistorial: any[]) => {
 };
 
 // --- GENERADOR DE RECIBO PDF DINÁMICO ---
-const generarReciboPDF = (pago: any) => {
+const generarReciboPDF = (pago: any, indexPago = 0, accion: 'descargar' | 'previsualizar' = 'descargar') => {
   const doc = new jsPDF();
   const evento = eventoActivo.value;
   const logoDirecto = convertirUrlImagen(perfilUsuario.value.logo_url);
+
+  // Número de operación estructurado profesional: REC-FECHA-SECUENCIA (Ej: REC-28102026-01)
+  const fechaDigits = (pago.fecha || '').replace(/[^0-9]/g, '').slice(0, 8);
+  const numOperacion = `REC-${fechaDigits || '00000000'}-${(indexPago + 1).toString().padStart(2, '0')}`;
 
   if (logoDirecto) {
     const img = new Image();
@@ -605,7 +618,7 @@ const generarReciboPDF = (pago: any) => {
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.text(`Fecha: ${pago.fecha}`, 145, 20);
-    doc.text(`N° Operación: ${Math.floor(Math.random() * 100000)}`, 145, 25);
+    doc.text(`N° Operación: ${numOperacion}`, 145, 25);
 
     doc.setLineWidth(0.5);
     doc.setDrawColor(200);
@@ -655,22 +668,28 @@ const generarReciboPDF = (pago: any) => {
     doc.text("Firma Autorizada", 152.5, 226, { align: "center" });
     doc.text(perfilUsuario.value.nombre_empresa, 152.5, 231, { align: "center" });
 
-    // 6. Pie de página
+    // 6. Pie de página dinámico por profesional
     doc.setLineWidth(0.2);
     doc.line(20, 270, 190, 270);
     doc.setFontSize(9);
     doc.setTextColor(150);
-    doc.text(`${perfilUsuario.value.nombre_empresa} - Fotografía y Video Profesional`, 105, 278, { align: "center" });
+    const rubroTexto = perfilUsuario.value.rubro_servicio || 'Servicios Audiovisuales';
+    doc.text(`${perfilUsuario.value.nombre_empresa} - ${rubroTexto}`, 105, 278, { align: "center" });
 
-    const nombreArchivo = `Recibo_${evento.cliente_nombre.replace(/\s+/g, '_')}_${pago.fecha.split(' ')[0].replace(/\//g, '-')}.pdf`;
-    doc.save(nombreArchivo);
+    if (accion === 'previsualizar') {
+      window.open(doc.output('bloburl'), '_blank');
+    } else {
+      const fechaLimpia = (pago.fecha || '').split(' ')[0].replaceAll('/', '-');
+      const nombreArchivo = `Recibo_${evento.cliente_nombre.replace(/\s+/g, '_')}_${fechaLimpia}.pdf`;
+      doc.save(nombreArchivo);
+    }
   }
 };
 </script>
 
 <style scoped>
 /* Estilos Base */
-.gestion-container { background: #f8f9fa; padding: 20px; border-radius: 8px; max-width: 1200px; margin: 20px auto; color: #333; font-family: sans-serif; }
+.gestion-container { background: #f8f9fa; padding: 20px; border-radius: 8px; max-width: 1200px; margin: 20px auto; color: #333; font-family: sans-serif; box-sizing: border-box; }
 .nowrap { white-space: nowrap !important; }
 
 .panel-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
@@ -691,9 +710,13 @@ const generarReciboPDF = (pago: any) => {
 .form-editar label { display: block; font-weight: bold; margin-top: 10px; font-size: 14px; }
 .form-editar input, .form-editar select { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
 .inputs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 15px; }
-.inputs-grid input, .inputs-grid select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+.inputs-grid input, .inputs-grid select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box; }
 .btn-guardar { width: 100%; background: #007bff; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
 .btn-guardar:hover { background: #0056b3; }
+.btn-cancelar { width: 100%; background: #6c757d; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; margin-top: 8px; }
+.btn-cancelar:hover { background: #5a6268; }
+
+.modal-actions-footer { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
 
 hr { margin: 20px 0; border: 0; border-top: 1px solid #ddd; }
 
@@ -705,11 +728,11 @@ hr { margin: 20px 0; border: 0; border-top: 1px solid #ddd; }
 .filter-box select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
 
 /* Tabla Principal y Layout Clásico (PC) */
-.tabla-responsive { width: 100%; }
+.tabla-responsive { width: 100%; overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 14px; }
 th, td { border: 1px solid #eee; padding: 10px 12px; text-align: left; }
 th { background-color: #f1f1f1; font-weight: bold; color: #555; }
-.th-acciones { text-align: center; width: 250px; }
+.th-acciones { text-align: center; width: 280px; }
 .deuda { color: #dc3545; font-weight: bold; }
 
 /* Badges de Estado */
@@ -719,7 +742,7 @@ th { background-color: #f1f1f1; font-weight: bold; color: #555; }
 .badge.pendiente { background-color: #dc3545; }
 
 /* Celda de Acciones de la Tabla */
-.acciones-celda { display: flex; gap: 6px; justify-content: center; align-items: center; min-width: 240px; }
+.acciones-celda { display: flex; gap: 6px; justify-content: center; align-items: center; min-width: 270px; }
 .acciones-celda button { border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; transition: opacity 0.2s; white-space: nowrap; flex: 1; }
 .acciones-celda button:hover { opacity: 0.85; }
 
@@ -729,10 +752,10 @@ th { background-color: #f1f1f1; font-weight: bold; color: #555; }
 .btn-eliminar { background: #dc3545; color: white; }
 
 /* Modales */
-.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-.modal-content { background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 650px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 10px; box-sizing: border-box; }
+.modal-content { background: white; padding: 20px; border-radius: 8px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); box-sizing: border-radius; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-.modal-header h3 { margin: 0; color: #333; }
+.modal-header h3 { margin: 0; color: #333; font-size: 18px; word-break: break-word; }
 .btn-cerrar-modal { background: none; border: none; font-size: 20px; cursor: pointer; color: #888; }
 .btn-cerrar-modal:hover { color: red; }
 
@@ -741,20 +764,24 @@ th { background-color: #f1f1f1; font-weight: bold; color: #555; }
 /* Tabla Historial dentro del Modal */
 .tabla-historial th { background: #f8f9fa; }
 .acciones-modal { display: flex; gap: 5px; flex-wrap: wrap; }
+.btn-preview { background: #17a2b8; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
 .btn-pdf { background: #343a40; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
 .btn-eliminar-pago { background: #dc3545; color: white; border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; }
 
 
 /* ====================================================
-   DISEÑO RESPONSIVE "CARD LAYOUT" PARA MÓVILES
+   DISEÑO RESPONSIVE "CARD LAYOUT" PARA MÓVILES (FIXED OVERFLOW)
    ==================================================== */
 @media (max-width: 850px) {
+  .gestion-container { padding: 12px 10px; border-radius: 0; }
+  
   .tabla-responsive table, 
   .tabla-responsive tbody, 
   .tabla-responsive tr, 
   .tabla-responsive td {
     display: block;
     width: 100%;
+    box-sizing: border-box;
   }
 
   .tabla-responsive thead {
@@ -765,7 +792,7 @@ th { background-color: #f1f1f1; font-weight: bold; color: #555; }
     margin-bottom: 15px;
     background: white;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
     border: 1px solid #ddd;
     overflow: hidden;
   }
@@ -776,40 +803,48 @@ th { background-color: #f1f1f1; font-weight: bold; color: #555; }
     align-items: center;
     border-bottom: 1px solid #eee;
     text-align: right;
-    padding: 12px 15px;
+    padding: 10px 12px;
+    font-size: 13px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
   }
 
   .tabla-responsive td:last-child {
     border-bottom: 0;
-    flex-direction: column;
-    align-items: stretch;
     background-color: #fcfcfc;
+    padding: 12px;
   }
 
   .tabla-responsive td::before {
     content: attr(data-label);
     font-weight: bold;
     text-transform: uppercase;
-    font-size: 12px;
+    font-size: 11px;
     color: #666;
     text-align: left;
-    margin-right: 15px;
+    margin-right: 10px;
+    flex-shrink: 0;
+    max-width: 45%;
   }
 
   .acciones-celda {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+    min-width: 100% !important;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
   }
   
   .acciones-modal {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
     width: 100%;
   }
+  
   .acciones-modal button {
     width: 100%;
-    margin-bottom: 5px;
-    padding: 10px;
+    padding: 8px;
+    font-size: 12px;
   }
 }
 </style>
