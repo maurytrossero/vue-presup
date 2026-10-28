@@ -147,33 +147,24 @@ export default defineComponent({
       }
     };
 
-const recuperarPassword = async () => {
-  if (!email.value) {
-    return Swal.fire('Ingresa tu correo', 'Escribe tu correo en el campo superior antes de solicitar la recuperación.', 'info');
-  }
-  
-  try {
-    const authInstance = getAuth();
-    
-    // Configuramos la URL a la que queremos que redirija el botón del correo
-    const actionCodeSettings = {
-      // AQUÍ PONES TU DOMINIO REAL O LOCAL DE TU VISTA DE RESETEO
-      url: window.location.origin + '/reset-password', 
-      handleCodeInApp: true,
-    };
+    const recuperarPassword = async () => {
+          if (!email.value) {
+            return Swal.fire('Ingresa tu correo', 'Escribe tu correo en el campo superior antes de solicitar la recuperación.', 'info');
+          }
+          try {
+            const actionCodeSettings = {
+              url: window.location.origin + '/reset-password',
+              handleCodeInApp: true,
+            };
 
-    await sendPasswordResetEmail(authInstance, email.value, actionCodeSettings);
-    
-    Swal.fire(
-      'Correo enviado', 
-      'Revisa tu bandeja de entrada. El enlace te llevará directamente a nuestro sistema para cambiar tu contraseña con tu diseño.', 
-      'success'
-    );
-  } catch (error: any) {
-    console.error(error);
-    Swal.fire('Error', 'No se pudo enviar el correo de recuperación.', 'error');
-  }
-};
+            // Usamos directamente 'auth' que ya está importado arriba en LoginView
+            await sendPasswordResetEmail(auth, email.value, actionCodeSettings);
+            
+            Swal.fire('Correo enviado', 'Revisa tu bandeja para restablecer tu contraseña.', 'success');
+          } catch (error) {
+            Swal.fire('Error', 'No se pudo enviar el correo de recuperación.', 'error');
+          }
+        };
 
     const logout = async () => {
       try {
