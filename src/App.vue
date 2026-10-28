@@ -1,39 +1,31 @@
 <template>
   <div id="app">
     <nav class="navbar">
-      <div class="logo">Hace tu pedido online</div>
-        <ul class="nav-links" :class="{ 'nav-active': menuOpen }">
-          <!-- Botón X para cerrar -->
-          <li class="close-btn" @click="menuOpen = false">✖</li>
+      <!-- Título principal -->
+      <div class="logo">MT Producciones</div>
+      
+      <ul class="nav-links" :class="{ 'nav-active': menuOpen }">
+        <!-- Botón X para cerrar en móvil -->
+        <li class="close-btn" @click="menuOpen = false">✖</li>
 
-          <!-- Solo visible si el usuario está logueado -->
-          <li>
-            <router-link to="/foto-pedidos" @click="menuOpen = false">Listado de pedidos</router-link>
-          </li>
-          <li v-if="isAuthenticated">
-            <router-link to="/foto-pedidos/subir" @click="menuOpen = false">
-              Subir Fotos
-            </router-link>
-          </li>
+        <!-- Enlaces del sistema -->
+        <li>
+          <router-link to="/calculadora" @click="menuOpen = false">Calculadora</router-link>
+        </li>
+        
+        <!-- Solo visible si el administrador (tú) está logueado -->
+        <li v-if="isAuthenticated">
+          <router-link to="/gestion" @click="menuOpen = false">Panel de Gestión</router-link>
+        </li>
 
-          <li>
-            <router-link to="/foto-pedidos/nuevo" @click="menuOpen = false">Nuevo Pedido de fotos</router-link>
-          </li>
-          <li>
-            <router-link to="/foto-pedidos/editar" @click="menuOpen = false">Editar Pedido de fotos</router-link>
-          </li>
-          <li>
-            <router-link to="/foto-pedidos/seleccionar" @click="menuOpen = false">
-              Seleccionar Fotos
-            </router-link>
-          </li>
-          <li v-if="isAuthenticated">
-            <router-link to="/seleccion" @click="menuOpen = false">
-              Vista de Selección
-            </router-link>
-          </li>
-
-        </ul>
+        <!-- Botones de Autenticación -->
+        <li v-if="!isAuthenticated">
+          <router-link to="/login" class="btn-login" @click="menuOpen = false">Iniciar Sesión</router-link>
+        </li>
+        <li v-if="isAuthenticated">
+          <a href="#" class="btn-logout" @click.prevent="logout">Cerrar Sesión</a>
+        </li>
+      </ul>
 
       <div class="burger" @click="menuOpen = !menuOpen">
         <div></div>
@@ -46,29 +38,33 @@
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      menuOpen: false,
-    };
-  },
-  computed: {
-    isAuthenticated() {
-      // Suponiendo que guardas el token en localStorage
-      return localStorage.getItem('token') !== null;
-    }
-  },
-  methods: {
-    logout() {
-      localStorage.removeItem('token');
-      localStorage.removeItem('role'); // si guardas rol
-      this.$router.push('/login');
-    }
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
+
+const menuOpen = ref(false);
+const isAuthenticated = ref(false);
+const router = useRouter();
+const auth = getAuth();
+
+// Escucha en tiempo real si hay sesión iniciada en Firebase
+onMounted(() => {
+  onAuthStateChanged(auth, (user) => {
+    isAuthenticated.value = !!user;
+  });
+});
+
+const logout = async () => {
+  try {
+    await signOut(auth);
+    menuOpen.value = false;
+    router.push('/login');
+  } catch (error) {
+    console.error("Error al cerrar sesión", error);
   }
 };
 </script>
-
 
 <style scoped>
 /* Fuente base para la navbar */
@@ -89,6 +85,7 @@ export default {
   color: white;
   position: relative;
   z-index: 200;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 /* Logo */
@@ -104,13 +101,15 @@ export default {
   display: flex;
   gap: 1.5rem;
   align-items: center;
+  margin: 0;
+  padding: 0;
 }
 
 .nav-links li a {
   color: white;
   text-decoration: none;
   font-weight: 600;
-  padding: 0.4rem 0.6rem;
+  padding: 0.5rem 0.8rem;
   border-radius: 0.4rem;
   transition: background-color 0.2s;
 }
@@ -118,6 +117,11 @@ export default {
 .nav-links li a:hover {
   background-color: rgba(255, 255, 255, 0.2);
 }
+
+.btn-login { background-color: #10b981; }
+.btn-login:hover { background-color: #059669 !important; }
+.btn-logout { background-color: #ef4444; }
+.btn-logout:hover { background-color: #dc2626 !important; }
 
 /* Botón X - oculto por defecto en desktop */
 .nav-links .close-btn {
@@ -141,8 +145,7 @@ export default {
 }
 
 /* Responsive mobile */
-@media (max-width: 600px) {
-  /* Contenedor de links en mobile */
+@media (max-width: 768px) {
   .nav-links {
     position: fixed;
     right: 0;
@@ -181,35 +184,23 @@ export default {
     margin-bottom: 2rem;
     cursor: pointer;
     box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-    transition: transform 0.2s;
   }
 
-  .nav-links .close-btn:hover {
-    transform: scale(1.1);
-  }
-
-  /* Links mobile */
   .nav-links li {
     margin-bottom: 1rem;
+    width: 100%;
   }
 
   .nav-links li a {
     display: block;
     width: 100%;
-    padding: 0.8rem 1rem;
-    border-radius: 0.5rem;
+    text-align: center;
+    padding: 1rem;
     background-color: rgba(255,255,255,0.1);
-    transition: background-color 0.2s;
   }
 
-  .nav-links li a:hover {
-    background-color: rgba(255,255,255,0.3);
-  }
-
-  /* Mostrar burger en mobile */
   .burger {
     display: flex;
   }
 }
-
 </style>

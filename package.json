@@ -15,7 +15,8 @@
     "core-js": "^3.8.3",
     "express": "^5.1.0",
     "firebase": "^12.0.0",
-    "sweetalert2": "^11.22.2",
+    "jspdf": "^4.2.1",
+    "sweetalert2": "^11.26.25",
     "vue": "^3.2.13",
     "vue-router": "^4.3.0",
     "vue3-datepicker": "^0.4.0"

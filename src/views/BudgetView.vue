@@ -4,12 +4,7 @@
 
     <!-- Logo -->
     <div class="logo-container">
-      <img :src="logoImage" alt="Imagen" class="logo-image" />
-    </div>
-
-    <!-- Login fijo -->
-    <div class="fixed-login-bar">
-      <LoginView @login="handleLogin" @logout="handleLogout" />
+      <img :src="logoImage" alt="Logo MT Producciones" class="logo-image" />
     </div>
 
     <!-- SIEMPRE visible -->
@@ -27,7 +22,7 @@
       </div>
 
       <div class="form-container">
-        <!-- componente recibe si el admin está logueado -->
+        <!-- El componente recibe si el admin está logueado para mostrar/ocultar opciones de agendar -->
         <component :is="selectedComponent" :isAdminLoggedIn="isAdminLoggedIn" />
       </div>
     </div>
@@ -36,11 +31,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { getAuth, onAuthStateChanged } from 'firebase/auth'; // Importamos Auth
 import FifteenBudgetDetail from '@/components/FifteenBudgetDetail.vue';
 import WeddingBudgetDetail from '@/components/WeddingBudgetDetail.vue';
 import PromBudgetDetail from '@/components/PromBudgetDetail.vue';
 import OtherBudgetDetail from '@/components/OtherBudget.vue';
-import LoginView from '@/views/LoginView.vue';
 
 const logoImage = new URL('https://dl.dropboxusercontent.com/scl/fi/88du6azdw0ra19avnk31l/mt.jpg?rlkey=aqiids5q04l4fmymp0j4bjhru&st=avkk9osm', import.meta.url).href;
 const backgroundImage = new URL('https://dl.dropboxusercontent.com/scl/fi/xlzcgnnmjinncvex5f524/background.jpg?rlkey=kctu2redkuelqy2wlspz0aliv&st=kl8bpsjc', import.meta.url).href;
@@ -55,18 +50,12 @@ const selectedComponent = computed(() => ({
   other: OtherBudgetDetail,
 }[selectedOption.value] || null));
 
-const handleLogin = (loggedIn: boolean) => {
-  isAdminLoggedIn.value = loggedIn;
-  localStorage.setItem('isAdminLoggedIn', loggedIn.toString());
-};
-
-const handleLogout = () => {
-  isAdminLoggedIn.value = false;
-  localStorage.setItem('isAdminLoggedIn', 'false');
-};
-
+// Verificamos la sesión real con Firebase en lugar de usar LocalStorage
 onMounted(() => {
-  isAdminLoggedIn.value = localStorage.getItem('isAdminLoggedIn') === 'true';
+  const auth = getAuth();
+  onAuthStateChanged(auth, (user) => {
+    isAdminLoggedIn.value = !!user;
+  });
 });
 </script>
 
@@ -76,17 +65,19 @@ onMounted(() => {
   min-height: 100vh;
   z-index: 0;
   overflow: hidden;
+  padding-top: 20px;
 }
 
 .logo-container {
-  position: relative; /* agregado */
-  z-index: 10; /* agregado para estar sobre la overlay */
+  position: relative; 
+  z-index: 10; 
   width: 100px;
   height: 100px;
   background-color: white;
   border-radius: 50%;
   overflow: hidden;
-  margin: 60px auto 20px auto;
+  margin: 20px auto 20px auto; /* Ajustado al quitar la barra superior fija de login */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
 
 .background-overlay {
@@ -105,9 +96,9 @@ onMounted(() => {
   position: absolute;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(255, 255, 255, 0.85); /* Un poco más opaco para mayor legibilidad */
   pointer-events: none;
-  z-index: 1; /* debe ser menor que el logo */
+  z-index: 1; 
 }
 
 .container {
@@ -119,36 +110,42 @@ onMounted(() => {
   font-family: 'Arial', sans-serif;
 }
 
-/* Resto de estilos para logo, formulario, etc. igual que antes */
-
-
 h1 {
   text-align: center;
   color: #333;
+  margin-bottom: 25px;
+  text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
 }
 
 .select-container {
   margin: 20px 0;
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.95);
   border-radius: 10px;
-  padding: 10px;
+  padding: 15px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
 .select-container label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 8px;
   font-weight: bold;
+  color: #444;
 }
 
 .select {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   font-size: 16px;
-  border: 1px solid #333;
+  border: 1px solid #ccc;
   border-radius: 5px;
   background-color: #fff;
   color: #333;
   cursor: pointer;
+  outline: none;
+}
+
+.select:focus {
+  border-color: #2563eb;
 }
 
 .form-container {
@@ -162,25 +159,16 @@ h1 {
   display: block;
 }
 
-.fixed-login-bar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  background-color: #ffffff;
-  padding: 10px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  z-index: 999;
-}
-
 @media screen and (max-width: 600px) {
   .container {
     padding: 10px;
   }
-
   .logo-container {
     width: 80px;
     height: 80px;
+  }
+  h1 {
+    font-size: 1.5rem;
   }
 }
 </style>
