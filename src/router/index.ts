@@ -11,6 +11,7 @@ import SeleccionarFotosView from '@/views/SeleccionarFotosView.vue';
 import FotoSubida from '@/components/pedidos/FotoSubida.vue';
 import SeleccionView from '@/views/SelectionView.vue';
 import GestionView from '@/views/GestionView.vue';
+import ResetPasswordView from '../views/ResetPasswordView.vue'; // <-- 1. Importamos la vista de reseteo
 
 const routes = [
   { path: '/login', component: LoginView },
@@ -23,7 +24,10 @@ const routes = [
   { path: '/foto-pedidos/subir', name: 'SubirFotos', component: FotoSubida, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/seleccion', name: 'Seleccion', component: SeleccionView, meta: { requiresAuth: true } }, 
   
-  // CORRECCIÓN 1: Redirigir el inicio (/) directamente al login
+  // 2. Ruta para capturar el reseteo de contraseña de Firebase
+  { path: '/reset-password', component: ResetPasswordView },
+  
+  // Redirigir el inicio (/) directamente al login
   { path: '/', redirect: '/login' }
 ];
 
@@ -47,8 +51,7 @@ router.beforeEach(async (to, from, next) => {
   const currentUser = await getCurrentUser();
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
 
-  // CORRECCIÓN 2: Si la ruta es privada y no hay usuario, lo mandamos al login.
-  // (Eliminamos la redirección forzada a /calculadora para que puedan ver el Dashboard del LoginView)
+  // Si la ruta es privada y no hay usuario, lo mandamos al login
   if (requiresAuth && !currentUser) {
     next('/login');
   } 
