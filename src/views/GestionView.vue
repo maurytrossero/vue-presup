@@ -219,7 +219,7 @@
 import { ref, onMounted, computed } from 'vue';
 import Swal from 'sweetalert2';
 import { jsPDF } from 'jspdf';
-import { getAuth } from 'firebase/auth';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { 
   guardarPresupuestoAdmin, 
   obtenerPresupuestosGestion, 
@@ -262,8 +262,13 @@ const nuevoEvento = ref({
 });
 
 onMounted(() => {
-  cargarEventos();
-  cargarPerfilUsuario();
+  const auth = getAuth();
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      cargarEventos();
+      cargarPerfilUsuario();
+    }
+  });
 });
 
 const cargarEventos = async () => {

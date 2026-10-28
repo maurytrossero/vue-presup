@@ -1,13 +1,16 @@
-// src/services/presupuestoService.ts
-import { db } from './firebase';
-import { collection, addDoc, getDoc, setDoc, getDocs, updateDoc, doc, query, orderBy, deleteDoc } from 'firebase/firestore';
+import { db, auth } from './firebase';
+import { collection, addDoc, getDoc, setDoc, getDocs, updateDoc, doc, query, where, orderBy, deleteDoc } from 'firebase/firestore';
 
 const crmCollection = collection(db, "presupuestos_gestion");
 
 export const guardarPresupuestoAdmin = async (datosCrm: any) => {
   try {
+    const user = auth.currentUser;
+    const userId = user ? user.uid : 'anonimo';
+
     const docRef = await addDoc(crmCollection, {
       ...datosCrm,
+      userId: userId, // Asocia el evento al usuario logueado actual
       createdAt: new Date().toISOString()
     });
     return docRef.id;
@@ -19,19 +22,26 @@ export const guardarPresupuestoAdmin = async (datosCrm: any) => {
 
 export const obtenerPresupuestosGestion = async () => {
   try {
-    const q = query(crmCollection, orderBy("createdAt", "desc"));
+    const user = auth.currentUser;
+    // Si el usuario aún no cargó en el auth, esperamos o usamos su UID real
+    if (!user) return [];
+
+    const q = query(crmCollection, where("userId", "==", user.uid));
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }));
+    
+    const presupuestos: any[] = [];
+    querySnapshot.forEach((doc) => {
+      presupuestos.push({ id: doc.id, ...doc.data() });
+    });
+
+    // Ordenamos en memoria del navegador del más nuevo al más viejo
+    return presupuestos.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
   } catch (error) {
     console.error("Error al obtener la lista de gestión: ", error);
-    throw error;
+    return [];
   }
 };
 
-// Reemplaza tu función actualizarSaldos por esta:
 export const actualizarSaldos = async (id: string, nuevaSenia: number, nuevoSaldo: number, estado: string, historial: any[]) => {
   try {
     const docRef = doc(db, "presupuestos_gestion", id);
@@ -39,7 +49,7 @@ export const actualizarSaldos = async (id: string, nuevaSenia: number, nuevoSald
       senia_pagada: nuevaSenia,
       saldo_pendiente: nuevoSaldo,
       estado_pago: estado,
-      historial_pagos: historial, // <-- Guardamos el registro detallado
+      historial_pagos: historial,
       updatedAt: new Date().toISOString()
     });
   } catch (error) {
@@ -82,7 +92,6 @@ export const obtenerConfigUsuario = async (uid: string) => {
   }
 };
 
-// Guardar o actualizar perfil/logo
 export const guardarConfigUsuario = async (uid: string, configData: any) => {
   try {
     const docRef = doc(db, "configuraciones_usuarios", uid);
