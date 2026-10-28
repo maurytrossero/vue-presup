@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { getAuth, onAuthStateChanged } from 'firebase/auth'; // Nuevas importaciones
-import { auth } from '@/services/firebase'; // Tu instancia de Firebase
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { auth } from '@/services/firebase'; 
 
 import LoginView from '../views/LoginView.vue';
 import BudgetView from '@/views/BudgetView.vue';
@@ -22,7 +22,9 @@ const routes = [
   { path: '/foto-pedidos/seleccionar', name: 'SeleccionarFotos', component: SeleccionarFotosView},
   { path: '/foto-pedidos/subir', name: 'SubirFotos', component: FotoSubida, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/seleccion', name: 'Seleccion', component: SeleccionView, meta: { requiresAuth: true } }, 
-  { path: '/', redirect: '/calculadora' }
+  
+  // CORRECCIÓN 1: Redirigir el inicio (/) directamente al login
+  { path: '/', redirect: '/login' }
 ];
 
 const router = createRouter({
@@ -45,10 +47,9 @@ router.beforeEach(async (to, from, next) => {
   const currentUser = await getCurrentUser();
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
 
-  if (to.path === '/login' && currentUser) {
-    next('/calculadora');
-  } 
-  else if (requiresAuth && !currentUser) {
+  // CORRECCIÓN 2: Si la ruta es privada y no hay usuario, lo mandamos al login.
+  // (Eliminamos la redirección forzada a /calculadora para que puedan ver el Dashboard del LoginView)
+  if (requiresAuth && !currentUser) {
     next('/login');
   } 
   else {
