@@ -162,7 +162,8 @@ const descargarPresupuestoPDF = () => {
 
   generarPdfPresupuestoUniversal({
     tituloEvento: tituloFinal,
-    clienteNombre: clienteFinal, // <--- Pasamos explícitamente el cliente
+    clienteNombre: clienteFinal, 
+    fechaEvento: props.datosCliente?.fecha_evento || '', 
     introTexto: "Sabemos que una fiesta de 15 no es solo un evento, sino un momento único e irrepetible. Presentamos esta propuesta para registrar cada emoción.",
     itemsSeleccionados: itemsFiltrados,
     kmDistancia: kmDistancia.value,

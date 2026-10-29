@@ -17,6 +17,7 @@ interface DatosPresupuestoPDF {
   mesesProyectados: number;
   precioFinanciado: number;
   clienteNombre?: string; 
+  fechaEvento?: string; 
   perfilUsuario: {
     nombre_empresa?: string;
     nombre_firmante?: string;
@@ -128,6 +129,21 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
       yIntro += 6;
     }
 
+    // Fecha del Evento formateada (si fue seleccionada)
+    if (datos.fechaEvento && datos.fechaEvento.trim() !== '') {
+      // Convierte de YYYY-MM-DD a DD/MM/YYYY para que quede bien en Argentina
+      const partes = datos.fechaEvento.split('-');
+      const fechaFormateada = partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : datos.fechaEvento;
+
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(37, 99, 235); // Azul corporativo para destacar la fecha de la fiesta
+      doc.text(`Fecha del Evento: ${fechaFormateada}`, 20, yIntro);
+      yIntro += 6;
+    } else {
+      yIntro += 1;
+    }
+    
     doc.setFontSize(9.5);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(71, 85, 105);

@@ -56,6 +56,10 @@
             <label>Teléfono Cliente</label>
             <input v-model="datosCliente.telefono_contacto" placeholder="Ej: 3564 123456" />
           </div>
+          <div class="input-group">
+            <label>Fecha del Evento</label>
+            <input v-model="datosCliente.fecha_evento" type="date" />
+          </div>
         </div>
       </div>
 
@@ -119,6 +123,7 @@ const datosCliente = ref({
   cliente_nombre: '',
   titulo_evento: '',
   telefono_contacto: '',
+  fecha_evento: '',
   descripcion: ''
 });
 

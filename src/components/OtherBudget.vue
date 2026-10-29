@@ -182,6 +182,7 @@ const descargarPresupuestoPDF = () => {
   generarPdfPresupuestoUniversal({
     tituloEvento: tituloFinal,
     clienteNombre: props.datosCliente?.cliente_nombre || '', 
+    fechaEvento: props.datosCliente?.fecha_evento || '', 
     introTexto: "Presentamos la siguiente propuesta adaptada a la medida de los requerimientos solicitados para su evento.",
     itemsSeleccionados: itemsFiltrados,
     kmDistancia: kmDistancia.value,
