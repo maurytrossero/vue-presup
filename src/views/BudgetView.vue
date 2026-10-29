@@ -38,6 +38,27 @@
         </div>
       </div>
 
+      <!-- NUEVO: DATOS DEL CLIENTE Y EVENTO -->
+      <div class="admin-panel cliente-panel">
+        <div class="admin-header">
+          <h3>👤 Datos del Cliente / Evento (Opcional)</h3>
+        </div>
+        <div class="inputs-grid">
+          <div class="input-group">
+            <label>Cliente (Contacto)</label>
+            <input v-model="datosCliente.cliente_nombre" placeholder="Ej: Familia López" />
+          </div>
+          <div class="input-group">
+            <label>Título del Evento</label>
+            <input v-model="datosCliente.titulo_evento" placeholder="Ej: Los 15 de Angy" />
+          </div>
+          <div class="input-group">
+            <label>Teléfono Cliente</label>
+            <input v-model="datosCliente.telefono_contacto" placeholder="Ej: 3564 123456" />
+          </div>
+        </div>
+      </div>
+
       <!-- SELECTOR DE TIPO DE EVENTO -->
       <div class="select-container">
         <label for="service-select">Selecciona el tipo de evento a cotizar:</label>
@@ -85,13 +106,21 @@ const configGlobal = ref({
   costoHoraExtra: 50000,
   inflacionAnual: 37,
   costoKm: 250,
-  // Valores por defecto de tu marca
   nombre_empresa: 'MT Producciones',
   nombre_firmante: 'Mauricio Trossero',
   rubro_servicio: 'Fotografía y Video Profesional',
   logo_url: 'https://dl.dropboxusercontent.com/scl/fi/88du6azdw0ra19avnk31l/mt.jpg?rlkey=aqiids5q04l4fmymp0j4bjhru&st=avkk9osm',
-  telefono: '(3564) 6074890' 
+  telefono: '(3564) 6074890'
 });
+
+// NUEVO: OBJETO EXACTO DE LA BD DE GESTIÓN
+const datosCliente = ref({
+  cliente_nombre: '',
+  titulo_evento: '',
+  telefono_contacto: '',
+  descripcion: ''
+});
+
 const selectedComponent = computed(() => ({
   fifteen: FifteenBudgetDetail,
   wedding: WeddingBudgetDetail,
@@ -104,10 +133,8 @@ onMounted(() => {
   onAuthStateChanged(auth, async (user) => {
     isAdminLoggedIn.value = !!user;
     if (user) {
-      // Cargar configuración global desde Firebase
       const configBD = await obtenerConfigUsuario(user.uid);
       if (configBD) {
-        // ¡Magia aquí! Mezclamos los precios Y los datos de tu perfil (logo, nombre, etc.)
         configGlobal.value = { ...configGlobal.value, ...configBD };
       }
     }

@@ -16,12 +16,13 @@ interface DatosPresupuestoPDF {
   presupuestoTotal: number;
   mesesProyectados: number;
   precioFinanciado: number;
+  clienteNombre?: string; 
   perfilUsuario: {
     nombre_empresa?: string;
     nombre_firmante?: string;
     rubro_servicio?: string;
     logo_url?: string;
-    telefono?: string; // NUEVO: Campo para el WhatsApp de contacto
+    telefono?: string; 
   };
 }
 
@@ -116,13 +117,24 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
     doc.setTextColor(15, 23, 42);
     doc.text(datos.tituloEvento.toUpperCase(), 20, 48);
 
+    let yIntro = 55;
+
+    // Si pasaron el nombre del cliente, le damos un toque súper personalizado
+    if (datos.clienteNombre && datos.clienteNombre.trim() !== '') {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(37, 99, 235); // Azul destacado
+      doc.text(`Presupuesto preparado especialmente para: ${datos.clienteNombre}`, 20, yIntro);
+      yIntro += 6;
+    }
+
     doc.setFontSize(9.5);
     doc.setFont("helvetica", "italic");
     doc.setTextColor(71, 85, 105);
     const lineasIntro = doc.splitTextToSize(datos.introTexto, 170);
-    doc.text(lineasIntro, 20, 55);
+    doc.text(lineasIntro, 20, yIntro);
 
-    let y = 55 + (lineasIntro.length * 5) + 8;
+    let y = yIntro + (lineasIntro.length * 5) + 8;
 
     // -------------------------------------------------------------------------
     // 3. TABLA DE ÍTEMS

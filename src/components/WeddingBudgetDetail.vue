@@ -147,8 +147,12 @@ const compartir = (red: string) => {
 const descargarPresupuestoPDF = () => {
   const itemsFiltrados = items.value.filter(item => selectedItems.value.includes(item.value));
 
+  // Si tipearon un título personalizado (Ej: "Los 15 de Angy"), lo usamos, si no, el genérico
+  const tituloFinal = props.datosCliente?.titulo_evento || "Propuesta de Cobertura - Boda";
+
   generarPdfPresupuestoUniversal({
-    tituloEvento: "Propuesta de Cobertura - Boda",
+    tituloEvento: tituloFinal,
+    clienteNombre: props.datosCliente?.cliente_nombre, // Le pasamos el cliente al PDF
     introTexto: "Sabemos que el matrimonio es un momento único e irrepetible. Presentamos esta propuesta de cobertura audiovisual para registrar cada emoción y detalle de su gran día.",
     itemsSeleccionados: itemsFiltrados,
     kmDistancia: kmDistancia.value,

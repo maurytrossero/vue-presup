@@ -148,9 +148,12 @@ const compartir = (red: string) => {
 
 const descargarPresupuestoPDF = () => {
   const itemsFiltrados = items.value.filter(item => selectedItems.value.includes(item.value));
+  // Si tipearon un título personalizado (Ej: "Los 15 de Angy"), lo usamos, si no, el genérico
+  const tituloFinal = props.datosCliente?.titulo_evento || "Propuesta de Cobertura - Fiesta de 15";
 
   generarPdfPresupuestoUniversal({
-    tituloEvento: "Propuesta de Cobertura - Fiesta de 15",
+    tituloEvento: tituloFinal,
+    clienteNombre: props.datosCliente?.cliente_nombre, // Le pasamos el cliente al PDF
     introTexto: "Sabemos que una fiesta de 15 no es solo un evento, sino un momento único e irrepetible. Presentamos esta propuesta para registrar cada emoción.",
     itemsSeleccionados: itemsFiltrados,
     kmDistancia: kmDistancia.value,
@@ -158,7 +161,7 @@ const descargarPresupuestoPDF = () => {
     presupuestoTotal: presupuestoTotal.value,
     mesesProyectados: mesesProyectados.value,
     precioFinanciado: precioFinanciado.value,
-    perfilUsuario: props.config // <--- ¡Aquí recibe automáticamente el logo, nombre de empresa y firmante del colega logueado!
+    perfilUsuario: props.config 
   });
 };
 

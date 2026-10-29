@@ -196,8 +196,12 @@ const compartir = (red: string) => {
 const descargarPresupuestoPDF = () => {
   const itemsFiltrados = items.value.filter(item => selectedItems.value.includes(item.value));
 
+  // Si tipearon un título personalizado (Ej: "Los 15 de Angy"), lo usamos, si no, el genérico
+  const tituloFinal = `Propuesta de Cobertura - Egresados (${cantidadEgresados.value} alumnos)`;
+
   generarPdfPresupuestoUniversal({
-    tituloEvento: `Propuesta de Cobertura - Egresados (${cantidadEgresados.value} alumnos)`,
+    tituloEvento: tituloFinal,
+    clienteNombre: props.datosCliente?.cliente_nombre, // Le pasamos el cliente al PDF
     introTexto: "Una etapa tan importante merece quedar registrada para siempre. Presentamos nuestra propuesta integral para acompañar a la promoción en cada festejo.",
     itemsSeleccionados: itemsFiltrados,
     kmDistancia: kmDistancia.value,

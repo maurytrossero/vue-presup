@@ -172,9 +172,12 @@ const descargarPresupuestoPDF = () => {
       label: item.label || 'Servicio personalizado',
       horasTrabajadas: item.horasTrabajadas
     }));
+  // Si tipearon un título personalizado (Ej: "Los 15 de Angy"), lo usamos, si no, el genérico
+  const tituloFinal = props.datosCliente?.titulo_evento || "Propuesta de Cobertura - Personalizada";
 
   generarPdfPresupuestoUniversal({
-    tituloEvento: "Propuesta de Cobertura - Personalizada",
+    tituloEvento: tituloFinal,
+    clienteNombre: props.datosCliente?.cliente_nombre, // Le pasamos el cliente al PDF
     introTexto: "Presentamos la siguiente propuesta adaptada a la medida de los requerimientos solicitados para su evento.",
     itemsSeleccionados: itemsFiltrados,
     kmDistancia: kmDistancia.value,
