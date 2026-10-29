@@ -156,7 +156,7 @@ const descargarPresupuestoPDF = () => {
 
   generarPdfPresupuestoUniversal({
     tituloEvento: tituloFinal,
-    clienteNombre: nombreCliente, 
+    clienteNombre: props.datosCliente?.cliente_nombre || '', 
     introTexto: "Sabemos que el matrimonio es un momento único e irrepetible. Presentamos esta propuesta de cobertura audiovisual para registrar cada emoción y detalle de su gran día.",
     itemsSeleccionados: itemsFiltrados,
     kmDistancia: kmDistancia.value,

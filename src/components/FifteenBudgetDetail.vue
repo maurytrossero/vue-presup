@@ -151,13 +151,18 @@ const compartir = (red: string) => {
 };
 
 const descargarPresupuestoPDF = () => {
-  const itemsFiltrados = items.value.filter(item => selectedItems.value.includes(item.value));
-  // Si tipearon un título personalizado (Ej: "Los 15 de Angy"), lo usamos, si no, el genérico
+  // 1. Forzamos un aviso en pantalla y consola para confirmar que el botón responde
+  console.log("¡Hizo clic en descargar PDF!");
+  console.log("Datos que llegan del padre:", props.datosCliente);
+
+  const clienteFinal = props.datosCliente?.cliente_nombre || 'PRUEBA FORZADA';
   const tituloFinal = props.datosCliente?.titulo_evento || "Propuesta de Cobertura - Fiesta de 15";
+
+  const itemsFiltrados = items.value.filter(item => selectedItems.value.includes(item.value));
 
   generarPdfPresupuestoUniversal({
     tituloEvento: tituloFinal,
-    clienteNombre: nombreCliente, 
+    clienteNombre: clienteFinal, // <--- Pasamos explícitamente el cliente
     introTexto: "Sabemos que una fiesta de 15 no es solo un evento, sino un momento único e irrepetible. Presentamos esta propuesta para registrar cada emoción.",
     itemsSeleccionados: itemsFiltrados,
     kmDistancia: kmDistancia.value,

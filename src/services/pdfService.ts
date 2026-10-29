@@ -78,7 +78,7 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
     // -------------------------------------------------------------------------
     // 1. ENCABEZADO Y LOGO
     // -------------------------------------------------------------------------
-    const nombreEmpresa = perfil.nombre_empresa || "Estudio Audiovisual";
+    const nombreEmpresa = perfil.nombre_empresa || "MT Audiovisuales";
     const rubroServicio = perfil.rubro_servicio || "Servicios Audiovisuales Profesionales";
 
     if (imgCargada) {
@@ -124,7 +124,7 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(37, 99, 235); // Azul destacado
-      doc.text(`Presupuesto preparado especialmente para: ${datos.clienteNombre}`, 20, yIntro);
+      doc.text(`Cliente: ${datos.clienteNombre}`, 20, yIntro);
       yIntro += 6;
     }
 

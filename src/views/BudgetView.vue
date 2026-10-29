@@ -76,6 +76,7 @@
           :is="selectedComponent" 
           :isAdminLoggedIn="isAdminLoggedIn" 
           :config="configGlobal" 
+          :datosCliente="datosCliente"
         />
       </div>
     </div>
