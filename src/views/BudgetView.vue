@@ -79,14 +79,18 @@ const selectedOption = ref('fifteen');
 const isAdminLoggedIn = ref(false);
 const guardando = ref(false);
 
-// ESTADO GLOBAL DE PRECIOS
+// ESTADO GLOBAL DE PRECIOS Y PERFIL
 const configGlobal = ref({
-  precioBase: 150000,
-  costoHoraExtra: 45000,
-  inflacionAnual: 40,
-  costoKm: 250
+  precioBase: 170000,
+  costoHoraExtra: 50000,
+  inflacionAnual: 37,
+  costoKm: 250,
+  // Valores por defecto de tu marca
+  nombre_empresa: 'MT Producciones',
+  nombre_firmante: 'Mauricio Trossero',
+  rubro_servicio: 'Fotografía y Video Profesional',
+  logo_url: 'https://dl.dropboxusercontent.com/scl/fi/88du6azdw0ra19avnk31l/mt.jpg?rlkey=aqiids5q04l4fmymp0j4bjhru&st=avkk9osm'
 });
-
 const selectedComponent = computed(() => ({
   fifteen: FifteenBudgetDetail,
   wedding: WeddingBudgetDetail,
@@ -99,13 +103,11 @@ onMounted(() => {
   onAuthStateChanged(auth, async (user) => {
     isAdminLoggedIn.value = !!user;
     if (user) {
-      // Cargar precios globales desde Firebase al iniciar
+      // Cargar configuración global desde Firebase
       const configBD = await obtenerConfigUsuario(user.uid);
       if (configBD) {
-        if (configBD.precioBase) configGlobal.value.precioBase = configBD.precioBase;
-        if (configBD.costoHoraExtra) configGlobal.value.costoHoraExtra = configBD.costoHoraExtra;
-        if (configBD.inflacionAnual) configGlobal.value.inflacionAnual = configBD.inflacionAnual;
-        if (configBD.costoKm) configGlobal.value.costoKm = configBD.costoKm;
+        // ¡Magia aquí! Mezclamos los precios Y los datos de tu perfil (logo, nombre, etc.)
+        configGlobal.value = { ...configGlobal.value, ...configBD };
       }
     }
   });

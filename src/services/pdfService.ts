@@ -28,6 +28,11 @@ const formatearMoneda = (valor: number): string => {
   return new Intl.NumberFormat('es-AR').format(valor || 0);
 };
 
+// Nueva función: Redondear al múltiplo de 1000 más cercano
+const redondearAMil = (valor: number): number => {
+  return Math.round(valor / 1000) * 1000;
+};
+
 const convertirUrlImagen = (url: string): string => {
   if (!url) return '';
   if (url.includes('drive.google.com') && url.includes('/file/d/')) {
@@ -67,31 +72,29 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
     nombreFirmante = 'Firma Autorizada';
   }
 
-  const armarPDF = () => {
+  const armarPDF = (imgCargada?: HTMLImageElement) => {
     // -------------------------------------------------------------------------
     // 1. ENCABEZADO Y LOGO
     // -------------------------------------------------------------------------
-    if (logoDirecto) {
-      try {
-        doc.addImage(logoDirecto, 'JPEG', 20, 15, 22, 22);
-      } catch (e) {
-        // Continúa sin logo si hay error
-      }
-    }
-
     const nombreEmpresa = perfil.nombre_empresa || "Estudio Audiovisual";
     const rubroServicio = perfil.rubro_servicio || "Servicios Audiovisuales Profesionales";
+
+    if (imgCargada) {
+      doc.addImage(imgCargada, 'JPEG', 20, 12, 24, 24);
+    }
+    
+    const xOffset = imgCargada ? 50 : 20;
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(18);
     doc.setTextColor(30, 41, 59);
-    doc.text(nombreEmpresa, logoDirecto ? 48 : 20, 22);
+    doc.text(nombreEmpresa, xOffset, 22);
 
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100, 116, 139);
-    doc.text(rubroServicio, logoDirecto ? 48 : 20, 27);
-    doc.text("Contacto Profesional / Presupuestos", logoDirecto ? 48 : 20, 32);
+    doc.text(rubroServicio, xOffset, 27);
+    doc.text("WhatsApp / Contacto Profesional", xOffset, 32);
 
     doc.text(`Fecha: ${new Date().toLocaleDateString('es-AR')}`, 190, 22, { align: 'right' });
     doc.text("Validez: 15 días", 190, 27, { align: 'right' });
@@ -153,11 +156,15 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
     y += 8;
 
     // -------------------------------------------------------------------------
-    // 4. BLOQUE COMERCIAL DE CONDICIONES Y PAGOS (Contado vs Financiado/Seña)
+    // 4. BLOQUE COMERCIAL DE CONDICIONES Y PAGOS (Con redondeo)
     // -------------------------------------------------------------------------
-    const senaCalculada = datos.presupuestoTotal * 0.25; // Seña por defecto 25%
-    const tieneMeses = datos.mesesProyectados >= 1; // Si hay 1 mes o más
+    const tieneMeses = datos.mesesProyectados >= 1; 
     const altoCaja = tieneMeses ? 40 : 26;
+
+    // Aplicamos redondeo a miles para la seña y el precio financiado
+    const totalContado = redondearAMil(datos.presupuestoTotal);
+    const senaCalculada = redondearAMil(totalContado * 0.25); 
+    const financiadoCalculado = redondearAMil(datos.precioFinanciado);
 
     doc.setFillColor(248, 250, 252);
     doc.setDrawColor(203, 213, 225);
@@ -168,10 +175,10 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
     doc.setFont("helvetica", "bold");
     doc.setTextColor(15, 23, 42);
     doc.text("• Precio de Contado (Pago total antes del evento):", 25, y + 8);
-    doc.text(`$ ${formatearMoneda(datos.presupuestoTotal)}`, 180, y + 8, { align: 'right' });
+    doc.text(`$ ${formatearMoneda(totalContado)}`, 180, y + 8, { align: 'right' });
 
     if (tieneMeses) {
-      // Si hay 1 mes o más, mostramos la opción de seña y financiación proyectada
+      // Opción Financiada
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(71, 85, 105);
@@ -184,9 +191,9 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
       doc.setTextColor(37, 99, 235);
       doc.setFont("helvetica", "bold");
       doc.text(`  - Precio Financiado a ${datos.mesesProyectados} meses (hasta el evento):`, 25, y + 32);
-      doc.text(`$ ${formatearMoneda(datos.precioFinanciado)}`, 180, y + 32, { align: 'right' });
+      doc.text(`$ ${formatearMoneda(financiadoCalculado)}`, 180, y + 32, { align: 'right' });
     } else {
-      // Si el evento es inmediato (menos de 1 mes)
+      // Evento inmediato
       doc.setFontSize(9.5);
       doc.setFont("helvetica", "italic");
       doc.setTextColor(180, 83, 9);
@@ -217,8 +224,8 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
       y += 24;
     }
 
-// -------------------------------------------------------------------------
-    // 6. CONDICIONES GENERALES (Formulación más amable)
+    // -------------------------------------------------------------------------
+    // 6. INFORMACIÓN Y RESERVAS
     // -------------------------------------------------------------------------
     doc.setFontSize(8.5);
     doc.setFont("helvetica", "bold");
@@ -253,11 +260,12 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
     doc.save(`Presupuesto_${datos.tituloEvento.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
+  // Corrección: Pasar imgCargada correctamente
   if (logoDirecto) {
     const img = new Image();
     img.crossOrigin = "Anonymous";
     img.src = logoDirecto;
-    img.onload = () => armarPDF();
+    img.onload = () => armarPDF(img);
     img.onerror = () => armarPDF();
   } else {
     armarPDF();
