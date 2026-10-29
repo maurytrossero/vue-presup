@@ -205,7 +205,7 @@ const descargarPresupuestoPDF = () => {
 
   generarPdfPresupuestoUniversal({
     tituloEvento: tituloFinal,
-    clienteNombre: props.datosCliente?.cliente_nombre, // Le pasamos el cliente al PDF
+    clienteNombre: nombreCliente, 
     introTexto: "Una etapa tan importante merece quedar registrada para siempre. Presentamos nuestra propuesta integral para acompañar a la promoción en cada festejo.",
     itemsSeleccionados: itemsFiltrados,
     kmDistancia: kmDistancia.value,
