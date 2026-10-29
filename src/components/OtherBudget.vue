@@ -95,6 +95,10 @@ const props = defineProps({
   config: {
     type: Object,
     required: true
+  },
+  datosCliente: {
+    type: Object,
+    default: () => ({})
   }
 });
 
