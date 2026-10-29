@@ -88,6 +88,7 @@
         <button class="btn-share ws" @click="compartir('whatsapp')" title="WhatsApp">📱 WhatsApp</button>
         <button class="btn-share ig" @click="compartir('instagram')" title="Instagram">📸 Instagram</button>
         <button class="btn-share fb" @click="compartir('facebook')" title="Messenger">💬 Messenger</button>
+        <button class="btn-share pdf" @click="descargarPresupuestoPDF">📥 Descargar PDF</button>
       </div>
     </div>
   </div>
@@ -96,7 +97,7 @@
 <script setup lang="ts">
 import { ref, computed, defineProps } from 'vue';
 import DateSelected from './DateSelected.vue'; 
-
+import { generarPdfPresupuestoUniversal } from '@/services/pdfService';
 // Recibimos los precios globales que nos pasa BudgetView
 const props = defineProps({
   isAdminLoggedIn: Boolean,
@@ -191,6 +192,21 @@ const compartir = (red: string) => {
   if (red === 'whatsapp') window.open(`https://wa.me/?text=${urlMensaje}`, '_blank');
   if (red === 'instagram') window.open(`instagram://direct?text=${urlMensaje}`, '_blank');
   if (red === 'facebook') window.open(`fb-messenger://share?link=${encodeURIComponent(window.location.href)}&text=${urlMensaje}`, '_blank');
+};
+const descargarPresupuestoPDF = () => {
+  const itemsFiltrados = items.value.filter(item => selectedItems.value.includes(item.value));
+
+  generarPdfPresupuestoUniversal({
+    tituloEvento: `Propuesta de Cobertura - Egresados (${cantidadEgresados.value} alumnos)`,
+    introTexto: "Una etapa tan importante merece quedar registrada para siempre. Presentamos nuestra propuesta integral para acompañar a la promoción en cada festejo.",
+    itemsSeleccionados: itemsFiltrados,
+    kmDistancia: kmDistancia.value,
+    costoViaticos: costoViaticosTotal.value,
+    presupuestoTotal: presupuestoBaseHoy.value,
+    mesesProyectados: mesesProyectados.value,
+    precioFinanciado: presupuestoTotalFinanciado.value,
+    perfilUsuario: props.config
+  });
 };
 </script>
 

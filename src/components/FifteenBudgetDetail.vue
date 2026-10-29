@@ -70,6 +70,7 @@
         <button class="btn-share ws" @click="compartir('whatsapp')" title="WhatsApp">📱 WhatsApp</button>
         <button class="btn-share ig" @click="compartir('instagram')" title="Instagram">📸 Instagram</button>
         <button class="btn-share fb" @click="compartir('facebook')" title="Messenger">💬 Messenger</button>
+        <button class="btn-share pdf" @click="descargarPresupuestoPDF">📥 Descargar PDF</button>
       </div>
     </div>
   </div>
@@ -78,6 +79,9 @@
 <script setup lang="ts">
 import { ref, computed, defineProps } from 'vue';
 import DateSelected from './DateSelected.vue'; 
+import { jsPDF } from 'jspdf';
+import Swal from 'sweetalert2';
+import { generarPdfPresupuestoUniversal } from '@/services/pdfService';
 
 // Recibimos los precios globales que nos pasa BudgetView
 const props = defineProps({
@@ -140,6 +144,35 @@ const compartir = (red: string) => {
   if (red === 'whatsapp') window.open(`https://wa.me/?text=${urlMensaje}`, '_blank');
   if (red === 'instagram') window.open(`instagram://direct?text=${urlMensaje}`, '_blank');
   if (red === 'facebook') window.open(`fb-messenger://share?link=${encodeURIComponent(window.location.href)}&text=${urlMensaje}`, '_blank');
+};
+
+const descargarPresupuestoPDF = () => {
+  const itemsFiltrados = items.value.filter(item => selectedItems.value.includes(item.value));
+
+  generarPdfPresupuestoUniversal({
+    tituloEvento: "Propuesta de Cobertura - Fiesta de 15",
+    introTexto: "Sabemos que una fiesta de 15 no es solo un evento, sino un momento único e irrepetible. Presentamos esta propuesta para registrar cada emoción.",
+    itemsSeleccionados: itemsFiltrados,
+    kmDistancia: kmDistancia.value,
+    costoViaticos: costoViaticosTotal.value,
+    presupuestoTotal: presupuestoTotal.value,
+    mesesProyectados: mesesProyectados.value,
+    precioFinanciado: precioFinanciado.value,
+    perfilUsuario: props.config // <--- ¡Aquí recibe automáticamente el logo, nombre de empresa y firmante del colega logueado!
+  });
+};
+
+// Helper interno para convertir URL de logo si hace falta
+const convertirUrlImagen = (url: string): string => {
+  if (url.includes('drive.google.com') && url.includes('/file/d/')) {
+    const partes = url.split('/file/d/');
+    if (partes[1]) {
+      const id = partes[1].split('/')[0];
+      return `https://lh3.googleusercontent.com/d/${id}`;
+    }
+  }
+  if (url.includes('dropbox.com')) return url.replace('dl=0', 'raw=1');
+  return url;
 };
 </script>
 

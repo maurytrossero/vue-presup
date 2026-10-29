@@ -1,0 +1,265 @@
+import { jsPDF } from 'jspdf';
+import Swal from 'sweetalert2';
+import { getAuth } from 'firebase/auth';
+
+interface ItemPresupuesto {
+  label: string;
+  horasTrabajadas: number;
+}
+
+interface DatosPresupuestoPDF {
+  tituloEvento: string;
+  introTexto: string;
+  itemsSeleccionados: ItemPresupuesto[];
+  kmDistancia: number;
+  costoViaticos: number;
+  presupuestoTotal: number;
+  mesesProyectados: number;
+  precioFinanciado: number;
+  perfilUsuario: {
+    nombre_empresa?: string;
+    nombre_firmante?: string;
+    rubro_servicio?: string;
+    logo_url?: string;
+  };
+}
+
+const formatearMoneda = (valor: number): string => {
+  return new Intl.NumberFormat('es-AR').format(valor || 0);
+};
+
+const convertirUrlImagen = (url: string): string => {
+  if (!url) return '';
+  if (url.includes('drive.google.com') && url.includes('/file/d/')) {
+    const partes = url.split('/file/d/');
+    if (partes[1]) {
+      const id = partes[1].split('/')[0];
+      return `https://lh3.googleusercontent.com/d/${id}`;
+    }
+  }
+  if (url.includes('dropbox.com')) return url.replace('dl=0', 'raw=1');
+  return url;
+};
+
+export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
+  // Validación: Si el presupuesto es 0 o no hay ítems
+  if (!datos.itemsSeleccionados || datos.itemsSeleccionados.length === 0 || datos.presupuestoTotal <= 0) {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Presupuesto Vacío',
+      text: 'Debes seleccionar al menos un servicio o ítem antes de descargar el presupuesto.',
+      confirmButtonColor: '#2563eb'
+    });
+    return;
+  }
+
+  const doc = new jsPDF();
+  const perfil = datos.perfilUsuario || {};
+  const logoDirecto = perfil.logo_url ? convertirUrlImagen(perfil.logo_url) : '';
+
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+  let nombreFirmante: string = perfil.nombre_firmante || '';
+
+  if (currentUser && currentUser.email === 'mtproduccioneshd@gmail.com') {
+    nombreFirmante = 'Mauricio Trossero';
+  } else if (!nombreFirmante) {
+    nombreFirmante = 'Firma Autorizada';
+  }
+
+  const armarPDF = () => {
+    // -------------------------------------------------------------------------
+    // 1. ENCABEZADO Y LOGO
+    // -------------------------------------------------------------------------
+    if (logoDirecto) {
+      try {
+        doc.addImage(logoDirecto, 'JPEG', 20, 15, 22, 22);
+      } catch (e) {
+        // Continúa sin logo si hay error
+      }
+    }
+
+    const nombreEmpresa = perfil.nombre_empresa || "Estudio Audiovisual";
+    const rubroServicio = perfil.rubro_servicio || "Servicios Audiovisuales Profesionales";
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(18);
+    doc.setTextColor(30, 41, 59);
+    doc.text(nombreEmpresa, logoDirecto ? 48 : 20, 22);
+
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 116, 139);
+    doc.text(rubroServicio, logoDirecto ? 48 : 20, 27);
+    doc.text("Contacto Profesional / Presupuestos", logoDirecto ? 48 : 20, 32);
+
+    doc.text(`Fecha: ${new Date().toLocaleDateString('es-AR')}`, 190, 22, { align: 'right' });
+    doc.text("Validez: 15 días", 190, 27, { align: 'right' });
+
+    doc.setLineWidth(0.4);
+    doc.setDrawColor(226, 232, 240);
+    doc.line(20, 40, 190, 40);
+
+    // -------------------------------------------------------------------------
+    // 2. TÍTULO Y PRESENTACIÓN
+    // -------------------------------------------------------------------------
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text(datos.tituloEvento.toUpperCase(), 20, 48);
+
+    doc.setFontSize(9.5);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(71, 85, 105);
+    const lineasIntro = doc.splitTextToSize(datos.introTexto, 170);
+    doc.text(lineasIntro, 20, 55);
+
+    let y = 55 + (lineasIntro.length * 5) + 8;
+
+    // -------------------------------------------------------------------------
+    // 3. TABLA DE ÍTEMS
+    // -------------------------------------------------------------------------
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text("Detalle de Servicios Seleccionados", 20, y);
+    y += 6;
+
+    doc.setFillColor(241, 245, 249);
+    doc.rect(20, y, 170, 8, 'F');
+    doc.setFontSize(9);
+    doc.setTextColor(71, 85, 105);
+    doc.text("Servicio / Cobertura", 25, y + 5.5);
+    doc.text("Subtotal", 175, y + 5.5, { align: 'right' });
+    y += 10;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(30, 41, 59);
+
+    datos.itemsSeleccionados.forEach((item) => {
+      doc.text(`• ${item.label} (${item.horasTrabajadas} hs de cobertura)`, 25, y);
+      y += 8;
+    });
+
+    if (datos.kmDistancia > 0) {
+      doc.text(`• Viáticos / Traslado (${datos.kmDistancia} KM ida y vuelta)`, 25, y);
+      doc.text(`$ ${formatearMoneda(datos.costoViaticos)}`, 175, y, { align: 'right' });
+      y += 8;
+    }
+
+    y += 4;
+    doc.line(20, y, 190, y);
+    y += 8;
+
+    // -------------------------------------------------------------------------
+    // 4. BLOQUE COMERCIAL DE CONDICIONES Y PAGOS (Contado vs Financiado/Seña)
+    // -------------------------------------------------------------------------
+    const senaCalculada = datos.presupuestoTotal * 0.25; // Seña por defecto 25%
+    const tieneMeses = datos.mesesProyectados >= 1; // Si hay 1 mes o más
+    const altoCaja = tieneMeses ? 40 : 26;
+
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(203, 213, 225);
+    doc.roundedRect(20, y, 170, altoCaja, 2, 2, 'FD');
+
+    // Opción Contado (Siempre disponible y destacada)
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text("• Precio de Contado (Pago total antes del evento):", 25, y + 8);
+    doc.text(`$ ${formatearMoneda(datos.presupuestoTotal)}`, 180, y + 8, { align: 'right' });
+
+    if (tieneMeses) {
+      // Si hay 1 mes o más, mostramos la opción de seña y financiación proyectada
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(71, 85, 105);
+      doc.text("• Opción con Seña y Financiación:", 25, y + 17);
+      
+      doc.setFont("helvetica", "normal");
+      doc.text(`  - Valor de Seña (25% para congelar tarifa):`, 25, y + 24);
+      doc.text(`$ ${formatearMoneda(senaCalculada)}`, 180, y + 24, { align: 'right' });
+
+      doc.setTextColor(37, 99, 235);
+      doc.setFont("helvetica", "bold");
+      doc.text(`  - Precio Financiado a ${datos.mesesProyectados} meses (hasta el evento):`, 25, y + 32);
+      doc.text(`$ ${formatearMoneda(datos.precioFinanciado)}`, 180, y + 32, { align: 'right' });
+    } else {
+      // Si el evento es inmediato (menos de 1 mes)
+      doc.setFontSize(9.5);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(180, 83, 9);
+      doc.text("  (Al ser un evento próximo, aplica únicamente el pago de contado antes de la fecha).", 25, y + 18);
+    }
+
+    y += altoCaja + 8;
+
+    // -------------------------------------------------------------------------
+    // 5. REGALO EXCLUSIVO (Solo MT Producciones)
+    // -------------------------------------------------------------------------
+    const esMT = nombreEmpresa.toLowerCase().includes('mt producciones');
+    if (esMT) {
+      doc.setFillColor(254, 243, 199);
+      doc.setDrawColor(252, 211, 77);
+      doc.roundedRect(20, y, 170, 18, 2, 2, 'FD');
+
+      doc.setFontSize(9.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(180, 83, 9);
+      doc.text("🎁 ¡De regalo con tu contratación!", 25, y + 7);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8.5);
+      doc.setTextColor(120, 53, 15);
+      doc.text("Incluye Invitación Web Interactiva sin costo (cuenta regresiva, galería y confirmación de asistencia).", 25, y + 13);
+
+      y += 24;
+    }
+
+// -------------------------------------------------------------------------
+    // 6. CONDICIONES GENERALES (Formulación más amable)
+    // -------------------------------------------------------------------------
+    doc.setFontSize(8.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(71, 85, 105);
+    doc.text("Información útil y reservas:", 20, y);
+    y += 4;
+    doc.setFont("helvetica", "normal");
+    doc.text("• Para reservar y asegurar la fecha de tu evento, lo coordinamos con el pago de la seña acordada.", 22, y);
+    y += 4;
+    doc.text("• Presupuesto válido por 15 días. Los traslados y detalles de catering se coordinan según la locación.", 22, y);
+
+    // -------------------------------------------------------------------------
+    // 7. FIRMA AUTOGENERADA (Y = 230)
+    // -------------------------------------------------------------------------
+    const posYFirma = 230;
+
+    doc.setFont("times", "italic");
+    doc.setFontSize(18);
+    doc.setTextColor(30, 30, 80);
+    doc.text(nombreFirmante, 152.5, posYFirma, { align: "center" });
+
+    doc.setDrawColor(150);
+    doc.setLineWidth(0.5);
+    doc.line(120, posYFirma + 4, 185, posYFirma + 4);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100);
+    doc.text("Firma Autorizada", 152.5, posYFirma + 10, { align: "center" });
+    doc.text(nombreEmpresa, 152.5, posYFirma + 15, { align: "center" });
+
+    doc.save(`Presupuesto_${datos.tituloEvento.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
+
+  if (logoDirecto) {
+    const img = new Image();
+    img.crossOrigin = "Anonymous";
+    img.src = logoDirecto;
+    img.onload = () => armarPDF();
+    img.onerror = () => armarPDF();
+  } else {
+    armarPDF();
+  }
+};

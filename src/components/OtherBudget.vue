@@ -78,6 +78,7 @@
         <button class="btn-share ws" @click="compartir('whatsapp')" title="WhatsApp">📱 WhatsApp</button>
         <button class="btn-share ig" @click="compartir('instagram')" title="Instagram">📸 Instagram</button>
         <button class="btn-share fb" @click="compartir('facebook')" title="Messenger">💬 Messenger</button>
+        <button class="btn-share pdf" @click="descargarPresupuestoPDF">📥 Descargar PDF</button>
       </div>
     </div>
   </div>
@@ -86,6 +87,7 @@
 <script setup lang="ts">
 import { ref, computed, defineProps } from 'vue';
 import DateSelected from './DateSelected.vue'; 
+import { generarPdfPresupuestoUniversal } from '@/services/pdfService';
 
 // Recibimos la configuración global de precios desde BudgetView
 const props = defineProps({
@@ -160,6 +162,28 @@ const compartir = (red: string) => {
   if (red === 'whatsapp') window.open(`https://wa.me/?text=${urlMensaje}`, '_blank');
   if (red === 'instagram') window.open(`instagram://direct?text=${urlMensaje}`, '_blank');
   if (red === 'facebook') window.open(`fb-messenger://share?link=${encodeURIComponent(window.location.href)}&text=${urlMensaje}`, '_blank');
+};
+
+const descargarPresupuestoPDF = () => {
+  // Filtramos los ítems seleccionados y mapeamos sus etiquetas editadas
+  const itemsFiltrados = selectedItems.value
+    .filter(item => item.selected)
+    .map(item => ({
+      label: item.label || 'Servicio personalizado',
+      horasTrabajadas: item.horasTrabajadas
+    }));
+
+  generarPdfPresupuestoUniversal({
+    tituloEvento: "Propuesta de Cobertura - Personalizada",
+    introTexto: "Presentamos la siguiente propuesta adaptada a la medida de los requerimientos solicitados para su evento.",
+    itemsSeleccionados: itemsFiltrados,
+    kmDistancia: kmDistancia.value,
+    costoViaticos: costoViaticosTotal.value,
+    presupuestoTotal: presupuestoTotal.value,
+    mesesProyectados: mesesProyectados.value,
+    precioFinanciado: precioFinanciado.value,
+    perfilUsuario: props.config
+  });
 };
 </script>
 

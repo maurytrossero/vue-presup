@@ -70,6 +70,8 @@
         <button class="btn-share ws" @click="compartir('whatsapp')" title="WhatsApp">📱 WhatsApp</button>
         <button class="btn-share ig" @click="compartir('instagram')" title="Instagram">📸 Instagram</button>
         <button class="btn-share fb" @click="compartir('facebook')" title="Messenger">💬 Messenger</button>
+        <button class="btn-share pdf" @click="descargarPresupuestoPDF">📥 Descargar PDF</button>
+
       </div>
     </div>
   </div>
@@ -78,6 +80,7 @@
 <script setup lang="ts">
 import { ref, computed, defineProps } from 'vue';
 import DateSelected from './DateSelected.vue'; 
+import { generarPdfPresupuestoUniversal } from '@/services/pdfService';
 
 // Recibimos los precios globales que nos pasa BudgetView
 const props = defineProps({
@@ -141,6 +144,22 @@ const compartir = (red: string) => {
   if (red === 'instagram') window.open(`instagram://direct?text=${urlMensaje}`, '_blank');
   if (red === 'facebook') window.open(`fb-messenger://share?link=${encodeURIComponent(window.location.href)}&text=${urlMensaje}`, '_blank');
 };
+const descargarPresupuestoPDF = () => {
+  const itemsFiltrados = items.value.filter(item => selectedItems.value.includes(item.value));
+
+  generarPdfPresupuestoUniversal({
+    tituloEvento: "Propuesta de Cobertura - Boda",
+    introTexto: "Sabemos que el matrimonio es un momento único e irrepetible. Presentamos esta propuesta de cobertura audiovisual para registrar cada emoción y detalle de su gran día.",
+    itemsSeleccionados: itemsFiltrados,
+    kmDistancia: kmDistancia.value,
+    costoViaticos: costoViaticosTotal.value,
+    presupuestoTotal: presupuestoTotal.value,
+    mesesProyectados: mesesProyectados.value,
+    precioFinanciado: precioFinanciado.value,
+    perfilUsuario: props.config
+  });
+};
+
 </script>
 
 <style scoped>
