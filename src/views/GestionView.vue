@@ -49,7 +49,7 @@
         <input v-model.number="nuevoEvento.total_presupuesto" type="number" placeholder="Monto Total Acordado ($)" />
       </div>
       
-      <!-- Nuevo campo de descripción / notas -->
+      <!-- Campo de descripción / notas -->
       <textarea v-model="nuevoEvento.descripcion" placeholder="Información adicional, horarios, dirección o notas (Opcional)" class="input-descripcion"></textarea>
 
       <button class="btn-guardar" @click="guardarEvento">Agendar Evento</button>
@@ -79,7 +79,7 @@
         <thead>
           <tr>
             <th>Cliente</th>
-            <th>Título del Evento</th>
+            <th class="col-titulo">Título del Evento</th>
             <th>Fecha</th>
             <th>Servicio</th>
             <th>Cobertura</th>
@@ -95,12 +95,20 @@
             <td data-label="Cliente">
               <strong>{{ evento.cliente_nombre }}</strong>
             </td>
-            <td data-label="Título del Evento">
-              {{ evento.titulo_evento || '- - -' }}
-              <div v-if="evento.descripcion" class="text-notas" :title="evento.descripcion">
-                📝 {{ evento.descripcion.substring(0, 20) }}{{ evento.descripcion.length > 20 ? '...' : '' }}
-              </div>
+            
+            <!-- Columna mejorada de Título y Notas -->
+            <td data-label="Título del Evento" class="col-titulo">
+              <div class="titulo-destacado">{{ evento.titulo_evento || '- - -' }}</div>
+              <button 
+                v-if="evento.descripcion" 
+                class="btn-ver-notas" 
+                @click="verNotasEvento(evento.titulo_evento || evento.cliente_nombre, evento.descripcion)"
+                title="Leer detalles completos"
+              >
+                📝 Ver Detalles
+              </button>
             </td>
+
             <td data-label="Fecha" class="nowrap">{{ formatearFecha(evento.fecha_evento) }}</td>
             <td data-label="Servicio">{{ evento.tipo_servicio }}</td>
             <td data-label="Cobertura">{{ evento.tipo_cobertura }}</td>
@@ -520,6 +528,22 @@ const guardarEdicionEvento = async () => {
   }
 };
 
+// --- VISOR MODAL DE NOTAS COMPLETAS ---
+const verNotasEvento = (titulo: string, descripcion: string) => {
+  Swal.fire({
+    title: `📝 Detalles del Evento`,
+    html: `
+      <div style="text-align: left;">
+        <h4 style="color: #333; margin-bottom: 10px;">${titulo}</h4>
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0; white-space: pre-wrap; font-size: 14px; color: #475569;">${descripcion}</div>
+      </div>
+    `,
+    confirmButtonText: 'Cerrar',
+    confirmButtonColor: '#007bff'
+  });
+};
+
+
 // --- GESTIÓN DE PAGOS ---
 const abrirPago = async (evento: any) => {
   const { value: montoMandar } = await Swal.fire({
@@ -748,7 +772,7 @@ const generarReciboPDF = (pago: any, indexPago = 0, accion: 'descargar' | 'previ
 
 <style scoped>
 /* Estilos Base */
-.gestion-container { background: #f8f9fa; padding: 20px; border-radius: 8px; max-width: 1200px; margin: 20px auto; color: #333; font-family: sans-serif; box-sizing: border-box; }
+.gestion-container { background: #f8f9fa; padding: 20px; border-radius: 8px; max-width: 1350px; margin: 20px auto; color: #333; font-family: sans-serif; box-sizing: border-box; }
 .nowrap { white-space: nowrap !important; }
 
 .panel-header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
@@ -795,9 +819,35 @@ hr { margin: 20px 0; border: 0; border-top: 1px solid #ddd; }
 table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 14px; }
 th, td { border: 1px solid #eee; padding: 10px 12px; text-align: left; vertical-align: middle; }
 th { background-color: #f1f1f1; font-weight: bold; color: #555; }
-.th-acciones { text-align: center; width: 280px; }
+.th-acciones { text-align: center; }
 .deuda { color: #dc3545; font-weight: bold; }
-.text-notas { font-size: 11px; color: #666; margin-top: 4px; font-style: italic; }
+
+/* AJUSTES PARA LA COLUMNA DE TÍTULO Y DETALLES */
+.col-titulo {
+  min-width: 150px;
+  max-width: 250px;
+}
+.titulo-destacado {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+.btn-ver-notas {
+  background-color: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-block;
+}
+.btn-ver-notas:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
 
 /* Badges de Estado */
 .badge { padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; display: inline-block; text-align: center; }
@@ -806,8 +856,8 @@ th { background-color: #f1f1f1; font-weight: bold; color: #555; }
 .badge.pendiente { background-color: #dc3545; }
 
 /* Celda de Acciones de la Tabla */
-.acciones-celda { display: flex; gap: 6px; justify-content: center; align-items: center; min-width: 270px; }
-.acciones-celda button { border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; transition: opacity 0.2s; white-space: nowrap; flex: 1; }
+.acciones-celda { display: flex; gap: 4px; justify-content: center; align-items: center; width: max-content; }
+.acciones-celda button { border: none; padding: 5px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; transition: opacity 0.2s; white-space: nowrap; flex: 1; }
 .acciones-celda button:hover { opacity: 0.85; }
 
 .btn-pago { background: #28a745; color: white; }
@@ -845,6 +895,11 @@ th { background-color: #f1f1f1; font-weight: bold; color: #555; }
     display: block;
     width: 100%;
     box-sizing: border-box;
+  }
+
+  .col-titulo {
+    min-width: unset;
+    max-width: unset;
   }
 
   .tabla-responsive thead {

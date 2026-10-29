@@ -1,452 +1,222 @@
 <template>
-  <div class="presupuesto-container">
-    
-    <h1 class="titulo">Calculador de Presupuesto personalizado</h1>
+  <div class="presupuesto-card">
+    <h2 class="titulo-calc">⚙️ Detalle de Cotización: Personalizado</h2>
 
-    <!-- Sección de Precio Base -->
-    <div class="seccion-precio" v-if="isAdminLoggedIn">
-      <label>Precio por 2 horas de cobertura </label>
-      <input v-model="precioBase" type="number" />
-    </div>
-
-    <!-- Sección de Valor Hora Extra -->
-    <div class="seccion-hora-extra" v-if="isAdminLoggedIn">
-      <label>Precio por hora extra </label>
-      <input v-model="costoHoraExtra" type="number" />
-    </div>
-
-    <!-- Sección de Meses de Proyección -->
-    <div class="seccion-meses-proyeccion">
-      <label for="service-select">Fecha del evento:</label>
-      <DateSelected @updateMonthsRemaining="handleUpdateMonthsRemaining" />
-      <br>
-      <label>Cantidad de meses para el evento </label>
-      <input v-model="mesesProyectados" type="number" />
-    </div>
-
-    <!-- Sección de Inflación Anual -->
-    <div class="seccion-inflacion-anual" v-if="isAdminLoggedIn">
-      <label>Inflación interanual %</label>
-      <input v-model="inflacionAnual" type="number" /> 
-    </div>
-
-    <!-- Sección de Items -->
-    <div class="seccion-items">
-      <label class="subtitulo">Selecciona los Items</label>
-
-      <!-- Contenedor de los items -->
-      <div v-for="(item, index) in selectedItems" :key="index" class="item-container">
-        <input
-          type="checkbox"
-          :id="item.value"
-          :value="item.value"
-          v-model="selectedItems[index].selected"
-        />
-        <label :for="item.value" class="item-label">{{ item.label }}</label>
-        <input
-          type="number"
-          :id="item.value + 'Horas'"
-          v-model="item.horasTrabajadas"
-          :disabled="!item.selected"
-          class="horas-input"
-        />
-        <label :for="item.value + 'Horas'" class="item-label">Horas Trabajadas </label>
-        <p v-if="item.selected" class="costo-text">
-          Costo {{ item.label }}: $ {{ calcularCostoItem(item) }}
-        </p>
-
-        <!-- Botón para quitar item -->
-        <button @click="removeItem(index)" class="boton-quitar">Quitar</button>
+    <!-- SECCIÓN: FECHA Y DISTANCIA -->
+    <div class="configuracion-evento">
+      <div class="seccion-fecha">
+        <label class="label-destacado">📅 Fecha del evento:</label>
+        <DateSelected @updateMonthsRemaining="handleUpdateMonthsRemaining" />
+        
+        <div class="meses-box">
+          <label>Meses restantes para el evento:</label>
+          <input v-model.number="mesesProyectados" type="number" class="input-corto" />
+        </div>
       </div>
 
-      <!-- Botón para agregar nuevo item -->
-      <button @click="addItem" class="boton-agregar">Agregar Item</button>
+      <div class="seccion-viaticos">
+        <label class="label-destacado">🚗 Viáticos (Traslado)</label>
+        <div class="viaticos-box">
+          <label>Distancia Ida y Vuelta (KM):</label>
+          <div class="input-prefix">
+            <input v-model.number="kmDistancia" type="number" placeholder="Ej: 120" />
+            <span class="suffix">KM</span>
+          </div>
+        </div>
+        <p v-if="kmDistancia > 0" class="texto-costo">Costo de traslado: <strong>$ {{ formatearMoneda(costoViaticosTotal) }}</strong></p>
+      </div>
     </div>
 
+    <!-- SECCIÓN: ITEMS PERSONALIZADOS Y EDITABLES -->
+    <div class="seccion-items">
+      <h3 class="label-destacado">📸 Ítems Personalizados</h3>
+      
+      <div v-for="(item, index) in selectedItems" :key="index" class="item-fila-personalizada" :class="{ 'seleccionado': item.selected }">
+        <div class="item-main-grid">
+          <div class="item-checkbox-label">
+            <input type="checkbox" v-model="item.selected" :id="'chk-' + index" />
+            <!-- Textbox editable para cambiar el nombre del detalle del ítem -->
+            <input type="text" v-model="item.label" class="input-label-editable" placeholder="Nombre del servicio..." />
+          </div>
 
-    <!-- Resultados -->
-    <div class="resultados">
-      <h2 class="subtitulo">Resultado del Presupuesto</h2>
-      <p class="total-presupuesto">Total Presupuesto: $ {{ mostrarPresupuesto }}</p>
-      <p v-if="mesesProyectados >= 1" class="precio-financiado">Precio Financiado {{ mesesProyectados }} meses: $ {{ mostrarPrecioFinanciado }}</p>
+          <div class="item-horas-box">
+            <label>Horas:</label>
+            <input type="number" v-model.number="item.horasTrabajadas" :disabled="!item.selected" class="input-corto" min="1" />
+          </div>
+        </div>
+
+        <div class="item-footer-row">
+          <p v-if="item.selected" class="costo-text">
+            Costo {{ item.label || 'Servicio' }}: <strong>$ {{ formatearMoneda(calcularCostoItem(item)) }}</strong>
+          </p>
+          <span v-else class="inactivo">No incluido</span>
+
+          <button @click="removeItem(index)" class="btn-quitar">🗑️ Quitar</button>
+        </div>
+      </div>
+
+      <!-- Botón para agregar nuevo ítem -->
+      <button @click="addItem" class="boton-agregar">➕ Agregar Nuevo Ítem</button>
     </div>
 
-    <!--Compartir presupuesto -->
-    <div class="botones-container">
-      <h3 class="compartir-titulo">Compartir Presupuesto</h3>
+    <!-- RESULTADOS FINALES -->
+    <div class="resultados-panel">
+      <div class="res-item">
+        <span>Total Presupuesto Hoy:</span>
+        <h2>$ {{ formatearMoneda(presupuestoTotal) }}</h2>
+      </div>
+      <div class="res-item destacado" v-if="mesesProyectados >= 1">
+        <span>Precio Financiado ({{ mesesProyectados }} meses):</span>
+        <h2>$ {{ formatearMoneda(precioFinanciado) }}</h2>
+      </div>
+    </div>
 
+    <!-- COMPARTIR -->
+    <div class="compartir-panel">
+      <h4>Compartir Cotización</h4>
       <div class="botones-compartir">
-        <button class="facebook-button" @click="compartirPorFacebookMessenger"></button>
-        <button class="whatsapp-button" @click="compartirPorWhatsApp"></button>
-        <button class="instagram-button" @click="compartirPorInstagram"></button>
-        <button class="telegram-button" @click="compartirPorTelegram"></button>
-        <button class="email-button" @click="compartirPorEmail"></button>
+        <button class="btn-share ws" @click="compartir('whatsapp')" title="WhatsApp">📱 WhatsApp</button>
+        <button class="btn-share ig" @click="compartir('instagram')" title="Instagram">📸 Instagram</button>
+        <button class="btn-share fb" @click="compartir('facebook')" title="Messenger">💬 Messenger</button>
       </div>
     </div>
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue';
-import DateSelected from './DateSelected.vue';
+<script setup lang="ts">
+import { ref, computed, defineProps } from 'vue';
+import DateSelected from './DateSelected.vue'; 
 
-export default defineComponent({
-  components: {
-    DateSelected
-  },
-  props: {
-    isAdminLoggedIn: {
-      type: Boolean,
-      required: true
-    }
-  },
-  setup(props) {
-    console.log("El estado del admin es:", props.isAdminLoggedIn);
-  },
-  data() {
-    return {
-      precioBase: 150000,
-      costoHoraExtra: 45000,
-      mesesProyectados: 0,
-      inflacionAnual: 36.6,
-      selectedItems: [{ label: 'Item 1', value: 'item1', horasTrabajadas: 2, selected: false }],
-      item1: { label: 'Item 1', value: 'item1', horasTrabajadas: 2 },
-    };
-  },
-  
-  methods: {
-    calcularPresupuestoTotal(): number {
-      return this.calcularCostoItem(this.item1);
-    },
-    calcularCostoItem(item: { label: string; value: string; horasTrabajadas: number }): number {
-      const costoBase = this.calcularCostoBase(item.horasTrabajadas);
-      return costoBase * this.calcularInflacionProyectada();
-    },
-    calcularCostoBase(horasTrabajadas: number): number {
-      if (horasTrabajadas === 2) {
-        return this.precioBase;
-      } else if (horasTrabajadas > 2) {
-        return this.precioBase + ((horasTrabajadas - 2) * this.costoHoraExtra);
-      } else if (horasTrabajadas === 1) {
-        return this.precioBase / 2;
-      } else {
-        return 0;
-      }
-    },
-    calcularInflacionProyectada(): number {
-      // Tu lógica de cálculo de inflación proyectada aquí
-      return 1;
-    },
-    calcularPresupuesto(): number {
-      return this.calcularCostoItem(this.item1);
-    },
-    calcularPrecioFinanciado(): string {
-      const presupuesto = this.calcularPresupuesto();
-      const inflacionMensual = this.inflacionAnual / 12 / 100;
-      const resultado = presupuesto + presupuesto * this.mesesProyectados * inflacionMensual;
-
-      if (resultado && typeof resultado === 'number') {
-        return resultado.toFixed(2);
-      } else {
-        return '0.00';
-      }
-    },
-
-    addItem() {
-      const newItem = {
-        label: `Item ${this.selectedItems.length + 1}`,
-        value: `item${this.selectedItems.length + 1}`,
-        horasTrabajadas: 2,
-        selected: false
-      };
-      this.selectedItems.push(newItem);
-    },
-    removeItem(index: number) {
-      this.selectedItems.splice(index, 1);
-    },
-
-
-
-    compartirPorWhatsApp() {
-      const mensaje = encodeURIComponent("¡Hola! Te comparto el presupuesto calculado: Total Presupuesto: $" + this.mostrarPresupuesto + " Precio Financiado: $" + this.mostrarPrecioFinanciado);
-      const url = "https://wa.me/?text=" + mensaje;
-      window.open(url, '_blank');
-    },
-    compartirPorInstagram() {
-      const mensaje = encodeURIComponent("¡Hola! Te comparto el presupuesto calculado: Total Presupuesto: $" + this.mostrarPresupuesto + " Precio Financiado: $" + this.mostrarPrecioFinanciado);
-      const url = "instagram://direct?text=" + mensaje;
-      window.open(url, '_blank');
-    },
-    compartirPorFacebookMessenger() {
-      const mensaje = encodeURIComponent("¡Hola! Te comparto el presupuesto calculado: Total Presupuesto: $" + this.mostrarPresupuesto + " Precio Financiado: $" + this.mostrarPrecioFinanciado);
-      const url = "fb-messenger://share?link=" + encodeURIComponent(window.location.href) + "&app_id=123456789&text=" + mensaje;
-      window.open(url, '_blank');
-    },
-    compartirPorTelegram() {
-      const mensaje = encodeURIComponent("¡Hola! Te comparto el presupuesto calculado: Total Presupuesto: $" + this.mostrarPresupuesto + " Precio Financiado: $" + this.mostrarPrecioFinanciado);
-      const url = "https://t.me/share/url?url=&text=" + mensaje;
-      window.open(url, '_blank');
-    },
-    compartirPorEmail() {
-      const asunto = encodeURIComponent("Presupuesto Compartido");
-      const cuerpo = encodeURIComponent("¡Hola! Te comparto el presupuesto calculado: Total Presupuesto: $" + this.mostrarPresupuesto + " Precio Financiado: $" + this.mostrarPrecioFinanciado);
-      const url = "mailto:?subject=" + asunto + "&body=" + cuerpo;
-      window.open(url, '_blank');
-    },
-    handleUpdateMonthsRemaining(...args: unknown[]): void {
-      const monthsRemaining = args[0] as number;
-      // Aquí puedes realizar cualquier lógica adicional, como validar el valor recibido
-      // y luego actualizar el estado o realizar otras acciones según sea necesario.
-      this.mesesProyectados = monthsRemaining;
-    },
-  },
-  computed: {
-    mostrarPresupuesto(): string {
-      let totalPresupuesto = 0;
-      this.selectedItems.forEach(item => {
-        if (item.selected) {
-          totalPresupuesto += this.calcularCostoItem(item);
-        }
-      });
-      return totalPresupuesto.toFixed(2);
-    },
-    mostrarPrecioFinanciado(): string {
-      const presupuesto = parseFloat(this.mostrarPresupuesto);
-      const inflacionMensual = this.inflacionAnual / 12 / 100;
-      const resultado = presupuesto + presupuesto * this.mesesProyectados * inflacionMensual;
-      return resultado.toFixed(2);
-    },
-  },
-
+// Recibimos la configuración global de precios desde BudgetView
+const props = defineProps({
+  isAdminLoggedIn: Boolean,
+  config: {
+    type: Object,
+    required: true
+  }
 });
+
+// Variables reactivas
+const mesesProyectados = ref(0);
+const kmDistancia = ref(0);
+
+// Lista de ítems dinámicos con la propiedad 'label' totalmente editable
+const selectedItems = ref([
+  { label: 'Servicio Principal', value: 'item1', horasTrabajadas: 2, selected: true }
+]);
+
+// --- FUNCIONES DE CÁLCULO ---
+const costoViaticosTotal = computed(() => kmDistancia.value > 0 ? (kmDistancia.value * props.config.costoKm) : 0);
+
+const calcularCostoBase = (horas: number): number => {
+  if (horas === 2) return props.config.precioBase;
+  if (horas > 2) return props.config.precioBase + ((horas - 2) * props.config.costoHoraExtra);
+  if (horas === 1) return props.config.precioBase / 2;
+  return 0;
+};
+
+const calcularCostoItem = (item: any): number => calcularCostoBase(item.horasTrabajadas);
+
+const presupuestoTotal = computed(() => {
+  const sumaItems = selectedItems.value
+    .filter(item => item.selected)
+    .reduce((total, item) => total + calcularCostoItem(item), 0);
+  return sumaItems + costoViaticosTotal.value;
+});
+
+const precioFinanciado = computed(() => {
+  const total = presupuestoTotal.value;
+  if (total === 0) return 0;
+  const inflacionMensual = props.config.inflacionAnual / 12 / 100;
+  return total + (total * mesesProyectados.value * inflacionMensual);
+});
+
+// --- GESTIÓN DE ÍTEMS ---
+const addItem = () => {
+  const nuevoIndex = selectedItems.value.length + 1;
+  selectedItems.value.push({
+    label: `Servicio ${nuevoIndex}`,
+    value: `item${nuevoIndex}`,
+    horasTrabajadas: 2,
+    selected: false
+  });
+};
+
+const removeItem = (index: number) => {
+  selectedItems.value.splice(index, 1);
+};
+
+// --- HELPERS Y COMPARTIR ---
+const handleUpdateMonthsRemaining = (months: number) => mesesProyectados.value = months;
+const formatearMoneda = (valor: number): string => new Intl.NumberFormat('es-AR').format(valor || 0);
+
+const compartir = (red: string) => {
+  const totalFormat = formatearMoneda(presupuestoTotal.value);
+  const finanFormat = formatearMoneda(precioFinanciado.value);
+  let texto = `¡Hola! Te comparto la cotización personalizada:\n\n*Total Hoy:* $${totalFormat}\n`;
+  if (mesesProyectados.value >= 1) texto += `*Financiado (${mesesProyectados.value} meses):* $${finanFormat}\n`;
+  const urlMensaje = encodeURIComponent(texto);
+  
+  if (red === 'whatsapp') window.open(`https://wa.me/?text=${urlMensaje}`, '_blank');
+  if (red === 'instagram') window.open(`instagram://direct?text=${urlMensaje}`, '_blank');
+  if (red === 'facebook') window.open(`fb-messenger://share?link=${encodeURIComponent(window.location.href)}&text=${urlMensaje}`, '_blank');
+};
 </script>
 
- 
-  <style scoped>
-  /* Estilos Generales */
-  .presupuesto-container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 10px;
-    font-family: 'Arial', sans-serif;
-    background-color: #f5f5f5;
-    border-radius: 10px; /* Borde redondeado de 10px */
+<style scoped>
+.presupuesto-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); font-family: 'Inter', sans-serif; color: #333; }
+.titulo-calc { text-align: center; color: #1e293b; margin-bottom: 25px; font-size: 22px; }
+.configuracion-evento { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }
+.label-destacado { display: block; font-size: 16px; font-weight: bold; color: #1e293b; margin-bottom: 10px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; }
+.meses-box, .viaticos-box { margin-top: 15px; }
+.meses-box label, .viaticos-box label { display: block; font-size: 13px; color: #475569; margin-bottom: 5px; }
+.input-corto { width: 80px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; }
+.input-prefix { display: flex; align-items: center; background: white; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; width: max-content; }
+.input-prefix .suffix { padding: 8px 10px; background: #e2e8f0; color: #475569; font-weight: bold; }
+.input-prefix input { border: none; padding: 8px; width: 100px; outline: none; }
+.texto-costo { font-size: 14px; color: #2563eb; margin-top: 5px; }
 
-  }
-  
-  /* Contenedor de la imagen */
-  .logo-container {
-    width: 100px; /* Ajusta el tamaño del contenedor según tus necesidades */
-    height: 100px; /* Ajusta el tamaño del contenedor según tus necesidades */
-    background-color: white; /* Fondo blanco */
-    border-radius: 50%; /* Esquinas redondeadas */
-    overflow: hidden; /* Asegura que la imagen no sobresalga del contenedor redondeado */
-    margin: 0 auto; /* Centra el contenedor horizontalmente */
-  }
-  
-  .logo-image {
-    width: 100%; /* Ajusta el ancho de la imagen según tus necesidades */
-    height: auto;
-    display: block;
-  }
-  
-  .titulo {
-    font-size: 20px;
-    margin-bottom: 15px;
-    color: #333;
-  }
-  
-  /* Secciones */
-  .seccion-precio,
-  .seccion-hora-extra,
-  .seccion-meses-proyeccion,
-  .seccion-inflacion-anual,
-  .seccion-items,
-  .resultados {
-    background-color: #fff;
-    padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    margin-bottom: 15px;
-  }
-  
-  .subtitulo {
-    font-size: 16px;
-    margin-bottom: 10px;
-    color: #555;
-  }
-  
-  /* Elementos de Item */
-  .item-container {
-    flex-direction: column;
-    margin-bottom: 10px;
-  }
-  
-  .item-label,
-  .horas-input,
-  .costo-text {
-    width: 100%;
-    margin-right: 0;
-  }
-  
-  .horas-input {
-    width: 60px;
-    margin-right: 10px;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-  }
-  
-  .costo-text {
-    font-size: 12px;
-    color: #777;
-    margin-top: 5px;
-  }
-  
-  /* Resultados */
-  .total-presupuesto,
-  .precio-financiado {
-    font-size: 16px;
-    margin-bottom: 10px;
-    color: #333;
-  }
-  
-  /* Estilos para Inputs específicos */
-  .seccion-precio input,
-  .seccion-hora-extra input,
-  .seccion-meses-proyeccion input,
-  .seccion-inflacion-anual input {
-    width: 100%;
-    padding: 10px; /* Ajusta el padding según tus preferencias */
-    margin-bottom: 10px; /* Espaciado inferior */
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    box-sizing: border-box;
-    font-size: 14px; /* Ajusta el tamaño de fuente según tus preferencias */
-  }
-  
-  /* Ajustes para Dispositivos Móviles */
-  @media screen and (max-width: 600px) {
-    .seccion-precio input,
-    .seccion-hora-extra input,
-    .seccion-meses-proyeccion input,
-    .seccion-inflacion-anual input {
-      margin-bottom: 15px; /* Añade más espacio inferior en dispositivos móviles */
-    }
-  }
-  
-  /* Estilos para los botones de compartir */
-  
-  
-  .botones-container {
-    text-align: center; /* Centra los elementos */
-  }
-  
-  .compartir-titulo {
-    margin-bottom: 10px; /* Espacio inferior */
-  }
-  
-  .botones-compartir {
-    display: inline-block; /* Alinea los botones en línea */
-  }
-  
-  .botones-compartir button {
-    width: 50px; /* Ancho del botón */
-    height: 50px; /* Altura del botón */
-    margin: 0 10px; /* Espacio horizontal entre botones */
-    display: inline-block;
-    background-size: cover; /* Ajusta el tamaño de la imagen */
-    background-repeat: no-repeat; /* Evita la repetición de la imagen */
-    border: none; /* Elimina el borde del botón */
-    border-radius: 50%; /* Forma redondeada */
-    cursor: pointer; /* Cambia el cursor al pasar por encima */
-    transition: background-color 0.3s; /* Transición para el efecto hover */
-  }
-  
-  .botones-compartir button:hover {
-    background-color: #ccc; /* Cambia el color al pasar el cursor por encima */
-  }
-  
-  .facebook-button {
-    background-image: url('https://e7.pngegg.com/pngimages/335/1001/png-clipart-social-media-facebook-computer-icons-social-network-linkedin-text-logo-internet.png');
-  }
-  
-  .whatsapp-button {
-    background-image: url('https://e7.pngegg.com/pngimages/347/373/png-clipart-computer-icons-whatsapp-whatsapp-text-trademark-thumbnail.png');
-  }
-  
-  .instagram-button {
-    background-image: url('https://e7.pngegg.com/pngimages/722/1011/png-clipart-logo-icon-instagram-logo-instagram-logo-purple-violet-thumbnail.png');
-  }
-  
-  .telegram-button {
-    background-image: url('https://e7.pngegg.com/pngimages/402/10/png-clipart-telegram-logo-scalable-graphics-icon-logo-blue-angle-thumbnail.png');
-  }
-  
-  .email-button {
-    background-image: url('https://e7.pngegg.com/pngimages/191/108/png-clipart-computer-icons-email-email-miscellaneous-blue-thumbnail.png');
-  }
-  
-  /* Estilos para el botón de agregar ítem */
-.botones-agregar button {
-  padding: 10px 20px; /* Ajusta el padding según tus preferencias */
-  background-color: #007bff; /* Color de fondo del botón */
-  color: #fff; /* Color del texto del botón */
-  border: none; /* Elimina el borde del botón */
-  border-radius: 4px; /* Borde redondeado */
-  cursor: pointer; /* Cambia el cursor al pasar por encima */
-  transition: background-color 0.3s; /* Transición para el efecto hover */
+/* Estilos de Ítems Personalizados */
+.seccion-items { margin-bottom: 30px; }
+.item-fila-personalizada {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 12px; transition: all 0.2s;
 }
+.item-fila-personalizada.seleccionado { border-color: #2563eb; background: #eff6ff; }
+.item-main-grid { display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap; margin-bottom: 10px; }
+.item-checkbox-label { display: flex; align-items: center; gap: 10px; flex: 2; min-width: 240px; }
+.item-checkbox-label input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+.input-label-editable { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; font-weight: 500; outline: none; background: white; }
+.input-label-editable:focus { border-color: #2563eb; }
+.item-horas-box { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #475569; font-weight: bold; }
+.item-footer-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; border-top: 1px dashed #e2e8f0; padding-top: 10px; }
+.costo-text { font-size: 14px; color: #0f172a; margin: 0; }
+.inactivo { color: #94a3b8; font-size: 14px; }
 
-.botones-agregar button:hover {
-  background-color: #0056b3; /* Cambia el color al pasar el cursor por encima */
-}
+.btn-quitar { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; }
+.btn-quitar:hover { background: #fecaca; }
 
-/* Estilos para el botón de quitar ítem */
-.quitar-item {
-  padding: 8px 16px; /* Ajusta el padding según tus preferencias */
-  background-color: #dc3545; /* Color de fondo del botón */
-  color: #fff; /* Color del texto del botón */
-  border: none; /* Elimina el borde del botón */
-  border-radius: 4px; /* Borde redondeado */
-  cursor: pointer; /* Cambia el cursor al pasar por encima */
-  transition: background-color 0.3s; /* Transición para el efecto hover */
-}
+.boton-agregar { background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; }
+.boton-agregar:hover { background: #059669; }
 
-.quitar-item:hover {
-  background-color: #bd2130; /* Cambia el color al pasar el cursor por encima */
-}
-/* Estilos para el botón de agregar */
-.boton-agregar {
-  background-color: #4CAF50; /* Color de fondo verde */
-  border: none; /* Sin borde */
-  color: white; /* Color de texto blanco */
-  padding: 10px 20px; /* Espaciado interno */
-  text-align: center; /* Alineación de texto centrada */
-  text-decoration: none; /* Sin decoración de texto */
-  display: inline-block; /* Mostrar como bloque en línea */
-  font-size: 16px; /* Tamaño de fuente */
-  margin: 4px 2px; /* Margen exterior */
-  cursor: pointer; /* Cursor tipo puntero al pasar */
-  border-radius: 5px; /* Bordes redondeados */
-}
+/* Resultados */
+.resultados-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+.res-item { background: #f1f5f9; padding: 20px; border-radius: 8px; text-align: center; border: 1px solid #cbd5e1; }
+.res-item span { display: block; font-size: 13px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+.res-item h2 { margin: 0; color: #1e293b; font-size: 24px; }
+.res-item.destacado { background: #2563eb; color: white; border-color: #1d4ed8; }
+.res-item.destacado span { color: #bfdbfe; }
+.res-item.destacado h2 { color: white; }
 
-/* Estilos para el botón de quitar */
-.boton-quitar {
-  background-color: #f44336; /* Color de fondo rojo */
-  border: none; /* Sin borde */
-  color: white; /* Color de texto blanco */
-  padding: 10px 20px; /* Espaciado interno */
-  text-align: center; /* Alineación de texto centrada */
-  text-decoration: none; /* Sin decoración de texto */
-  display: inline-block; /* Mostrar como bloque en línea */
-  font-size: 16px; /* Tamaño de fuente */
-  margin: 4px 2px; /* Margen exterior */
-  cursor: pointer; /* Cursor tipo puntero al pasar */
-  border-radius: 5px; /* Bordes redondeados */
-}
+/* Botones Compartir */
+.compartir-panel h4 { margin: 0 0 15px 0; text-align: center; color: #475569; }
+.botones-compartir { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.btn-share { border: none; padding: 10px 15px; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: opacity 0.2s; }
+.btn-share:hover { opacity: 0.85; }
+.btn-share.ws { background: #25D366; }
+.btn-share.ig { background: #E1306C; }
+.btn-share.fb { background: #0084FF; }
 
-  
-  </style>
-  
+@media (max-width: 600px) {
+  .item-main-grid { flex-direction: column; align-items: stretch; }
+}
+</style>

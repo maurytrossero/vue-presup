@@ -1,383 +1,182 @@
 <template>
-  <div class="presupuesto-container">
-    
-    <h1 class="titulo">Calculador de Presupuesto para Fiesta de 15</h1>
+  <div class="presupuesto-card">
+    <h2 class="titulo-calc">🎈 Detalle de Cotización: 15 Años</h2>
 
-    <!-- Sección de Precio Base -->
-    <div class="seccion-precio" v-if="isAdminLoggedIn">
-      <label>Precio por 2 horas de cobertura </label>
-      <input v-model="precioBase" type="number" />
-    </div>
+    <!-- SECCIÓN: FECHA Y DISTANCIA -->
+    <div class="configuracion-evento">
+      <div class="seccion-fecha">
+        <label class="label-destacado">📅 Fecha del evento:</label>
+        <DateSelected @updateMonthsRemaining="handleUpdateMonthsRemaining" />
+        
+        <div class="meses-box">
+          <label>Meses restantes para el evento:</label>
+          <input v-model.number="mesesProyectados" type="number" class="input-corto" />
+        </div>
+      </div>
 
-    <!-- Sección de Valor Hora Extra -->
-    <div class="seccion-hora-extra" v-if="isAdminLoggedIn">
-      <label>Precio por hora extra </label>
-      <input v-model="costoHoraExtra" type="number" />
-    </div>
-
-
-    <!-- Sección de Meses de Proyección -->
-    <div class="seccion-meses-proyeccion">
-      <label for="service-select">Fecha del evento:</label>
-      <DateSelected @updateMonthsRemaining="handleUpdateMonthsRemaining" />
-      <br>
-      <label>Cantidad de meses para el evento </label>
-      <input v-model="mesesProyectados" type="number" />
-    </div>
-
-    <!-- Sección de Inflación Anual -->
-    <div class="seccion-inflacion-anual" v-if="isAdminLoggedIn">
-      <label>Inflación interanual %</label>
-      <input v-model="inflacionAnual" type="number" /> 
-    </div>
-
-    <!-- Sección de Items -->
-    <div class="seccion-items">
-      <label class="subtitulo">Selecciona los Items</label>
-      <div v-for="item in items" :key="item.value" class="item-container">
-        <input
-          type="checkbox"
-          :id="item.value"
-          :value="item.value"
-          v-model="selectedItems"
-        />
-        <label :for="item.value" class="item-label">{{ item.label }}</label>
-        <input
-          type="number"
-          :id="item.value + 'Horas'"
-          v-model="item.horasTrabajadas"
-          :disabled="!selectedItems.includes(item.value)"
-          class="horas-input"
-        />
-        <label :for="item.value + 'Horas'" class="item-label">Horas Trabajadas</label>
-        <p v-if="selectedItems.includes(item.value)" class="costo-text">
-          Costo {{ item.label }}: $ {{ calcularCostoItem(item) }}
-        </p>
+      <div class="seccion-viaticos">
+        <label class="label-destacado">🚗 Viáticos (Traslado)</label>
+        <div class="viaticos-box">
+          <label>Distancia Ida y Vuelta (KM):</label>
+          <div class="input-prefix">
+            <input v-model.number="kmDistancia" type="number" placeholder="Ej: 120" />
+            <span class="suffix">KM</span>
+          </div>
+        </div>
+        <p v-if="kmDistancia > 0" class="texto-costo">Costo de traslado: <strong>$ {{ formatearMoneda(costoViaticosTotal) }}</strong></p>
       </div>
     </div>
 
-    <!-- Resultados -->
-    <div class="resultados">
-      <h2 class="subtitulo">Resultado del Presupuesto</h2>
-      <p class="total-presupuesto">Total Presupuesto: $ {{ mostrarPresupuesto }}</p>
-      <p v-if="mesesProyectados >= 1" class="precio-financiado">Precio Financiado {{ mesesProyectados }} meses: $ {{ mostrarPrecioFinanciado }}</p>
-    </div>
-
-    <!--Compartir presupuesto -->
-    <div class="botones-container">
-    <h3 class="compartir-titulo">Compartir Presupuesto</h3>
-
-    <div class="botones-compartir">
-      <button class="facebook-button" @click="compartirPorFacebookMessenger"></button>
-
-      <button class="whatsapp-button" @click="compartirPorWhatsApp"></button>
+    <!-- SECCIÓN: ITEMS DEL SERVICIO ESPECÍFICOS DE 15 AÑOS -->
+    <div class="seccion-items">
+      <h3 class="label-destacado">📸 Selecciona los Servicios</h3>
       
-      <button class="instagram-button" @click="compartirPorInstagram"></button>
+      <div v-for="item in items" :key="item.value" class="item-fila" :class="{ 'seleccionado': selectedItems.includes(item.value) }">
+        <div class="item-checkbox">
+          <input type="checkbox" :id="item.value" :value="item.value" v-model="selectedItems" />
+          <label :for="item.value">{{ item.label }}</label>
+        </div>
+        
+        <div class="item-horas">
+          <label :for="item.value + 'Horas'">Horas:</label>
+          <input type="number" :id="item.value + 'Horas'" v-model.number="item.horasTrabajadas" :disabled="!selectedItems.includes(item.value)" class="input-corto" min="1"/>
+        </div>
 
-      <button class="telegram-button" @click="compartirPorTelegram"></button>
-
-      <button class="email-button" @click="compartirPorEmail"></button>
+        <div class="item-subtotal">
+          <span v-if="selectedItems.includes(item.value)">
+            $ {{ formatearMoneda(calcularCostoItem(item)) }}
+          </span>
+          <span v-else class="inactivo">No incluido</span>
+        </div>
+      </div>
     </div>
-  </div>
 
+    <!-- RESULTADOS FINALES -->
+    <div class="resultados-panel">
+      <div class="res-item">
+        <span>Total Presupuesto Hoy:</span>
+        <h2>$ {{ formatearMoneda(presupuestoTotal) }}</h2>
+      </div>
+      <div class="res-item destacado" v-if="mesesProyectados >= 1">
+        <span>Precio Financiado ({{ mesesProyectados }} meses):</span>
+        <h2>$ {{ formatearMoneda(precioFinanciado) }}</h2>
+      </div>
+    </div>
 
+    <!-- COMPARTIR -->
+    <div class="compartir-panel">
+      <h4>Compartir Cotización</h4>
+      <div class="botones-compartir">
+        <button class="btn-share ws" @click="compartir('whatsapp')" title="WhatsApp">📱 WhatsApp</button>
+        <button class="btn-share ig" @click="compartir('instagram')" title="Instagram">📸 Instagram</button>
+        <button class="btn-share fb" @click="compartir('facebook')" title="Messenger">💬 Messenger</button>
+      </div>
+    </div>
   </div>
 </template>
 
+<script setup lang="ts">
+import { ref, computed, defineProps } from 'vue';
+import DateSelected from './DateSelected.vue'; 
 
-<script lang="ts">
-import { defineComponent, PropType } from 'vue';
-import DateSelected from './DateSelected.vue';
-
-export default defineComponent({
-  components: {
-    DateSelected
-  },
-  props: {
-    isAdminLoggedIn: {
-      type: Boolean,
-      required: true
-    }
-  },
-  setup(props) {
-    console.log("El estado del admin es:", props.isAdminLoggedIn);
-
-    // Aquí puedes retornar cualquier cosa que desees utilizar dentro del componente
-    return {};
-  },
-  data() {
-    return {
-      precioBase: 150000,
-      costoHoraExtra: 45000,
-      mesesProyectados: 0,
-      inflacionAnual: 36.6,
-      selectedItems: [] as string[],
-      items: [
-        { label: 'Fiesta', value: 'fiesta', horasTrabajadas: 9 },
-        { label: 'Sesion de fotos / Book', value: 'segundoItem', horasTrabajadas: 2 },
-        { label: 'Pintada de calle / Pancarta', value: 'tercerItem', horasTrabajadas: 2 },
-      ] as { label: string; value: string; horasTrabajadas: number }[],
-    };
-  },
-  methods: {
-    calcularPresupuestoTotal(): number {
-      return this.items
-        .filter(item => this.selectedItems.includes(item.value))
-        .reduce((total, item) => total + this.calcularCostoItem(item), 0);
-    },
-    calcularCostoItem(item: { label: string; value: string; horasTrabajadas: number }): number {
-      const costoBase = this.calcularCostoBase(item.horasTrabajadas);
-      return costoBase * this.calcularInflacionProyectada();
-    },
-    calcularCostoBase(horasTrabajadas: number): number {
-      if (horasTrabajadas === 2) {
-        return this.precioBase;
-      } else if (horasTrabajadas > 2) {
-        return this.precioBase + ((horasTrabajadas - 2) * this.costoHoraExtra);
-      } else if (horasTrabajadas === 1) {
-        return this.precioBase / 2;
-      } else {
-        return 0;
-      }
-    },
-    calcularInflacionProyectada(): number {
-      // Tu lógica de cálculo de inflación proyectada aquí
-      return 1;
-    },
-    calcularPresupuesto(): number {
-      return this.items
-        .filter(item => this.selectedItems.includes(item.value))
-        .reduce((total, item) => total + this.calcularCostoItem(item), 0);
-    },
-    calcularPrecioFinanciado(): string {
-      const presupuesto = this.calcularPresupuesto();
-      const inflacionMensual = this.inflacionAnual / 12 / 100;
-      const resultado = presupuesto + presupuesto * this.mesesProyectados * inflacionMensual;
-
-      if (resultado && typeof resultado === 'number') {
-        return resultado.toFixed(2);
-      } else {
-        return '0.00';
-      }
-    },
-
-    compartirPorWhatsApp() {
-      const mensaje = encodeURIComponent("¡Hola! Te comparto el presupuesto calculado: Total Presupuesto: $" + this.mostrarPresupuesto + " Precio Financiado: $" + this.mostrarPrecioFinanciado);
-      const url = "https://wa.me/?text=" + mensaje;
-      window.open(url, '_blank');
-    },
-    compartirPorInstagram() {
-      const mensaje = encodeURIComponent("¡Hola! Te comparto el presupuesto calculado: Total Presupuesto: $" + this.mostrarPresupuesto + " Precio Financiado: $" + this.mostrarPrecioFinanciado);
-      const url = "instagram://direct?text=" + mensaje;
-      window.open(url, '_blank');
-    },
-    compartirPorFacebookMessenger() {
-      const mensaje = encodeURIComponent("¡Hola! Te comparto el presupuesto calculado: Total Presupuesto: $" + this.mostrarPresupuesto + " Precio Financiado: $" + this.mostrarPrecioFinanciado);
-      const url = "fb-messenger://share?link=" + encodeURIComponent(window.location.href) + "&app_id=123456789&text=" + mensaje;
-      window.open(url, '_blank');
-    },
-    compartirPorTelegram() {
-      const mensaje = encodeURIComponent("¡Hola! Te comparto el presupuesto calculado: Total Presupuesto: $" + this.mostrarPresupuesto + " Precio Financiado: $" + this.mostrarPrecioFinanciado);
-      const url = "https://t.me/share/url?url=&text=" + mensaje;
-      window.open(url, '_blank');
-
-    },
-    compartirPorEmail() {
-      const asunto = encodeURIComponent("Presupuesto Compartido");
-      const cuerpo = encodeURIComponent("¡Hola! Te comparto el presupuesto calculado: Total Presupuesto: $" + this.mostrarPresupuesto + " Precio Financiado: $" + this.mostrarPrecioFinanciado);
-      const url = "mailto:?subject=" + asunto + "&body=" + cuerpo;
-      window.open(url, '_blank');
-    },
-    handleUpdateMonthsRemaining(...args: unknown[]): void {
-      const monthsRemaining = args[0] as number;
-      // Aquí puedes realizar cualquier lógica adicional, como validar el valor recibido
-      // y luego actualizar el estado o realizar otras acciones según sea necesario.
-      this.mesesProyectados = monthsRemaining;
-    },
-    
-  },
-
-  computed: {
-    mostrarPresupuesto(): string {
-      const presupuesto = this.calcularPresupuesto();
-      return presupuesto && typeof presupuesto === 'number' ? presupuesto.toFixed(2) : '0.00';
-    },
-    mostrarPrecioFinanciado(): string {
-      const precioFinanciado = this.calcularPrecioFinanciado();
-      return precioFinanciado && typeof precioFinanciado === 'string' ? precioFinanciado : '0.00';
-    },
-  },
+// Recibimos los precios globales que nos pasa BudgetView
+const props = defineProps({
+  isAdminLoggedIn: Boolean,
+  config: {
+    type: Object,
+    required: true
+  }
 });
+
+// Variables de cálculo
+const mesesProyectados = ref(0);
+const kmDistancia = ref(0);
+const selectedItems = ref<string[]>([]);
+
+// Ítems de 15 años
+const items = ref([
+  { label: 'Cobertura de Fiesta', value: 'fiesta', horasTrabajadas: 9 },
+  { label: 'Sesión de Fotos / Book Exterior', value: 'book', horasTrabajadas: 2 },
+  { label: 'Pintada de calle / Pancarta', value: 'pancarta', horasTrabajadas: 2 },
+]);
+
+// Cálculos usando props.config (la configuración global)
+const costoViaticosTotal = computed(() => kmDistancia.value > 0 ? (kmDistancia.value * props.config.costoKm) : 0);
+
+const calcularCostoBase = (horas: number): number => {
+  if (horas === 2) return props.config.precioBase;
+  if (horas > 2) return props.config.precioBase + ((horas - 2) * props.config.costoHoraExtra);
+  if (horas === 1) return props.config.precioBase / 2;
+  return 0;
+};
+
+const calcularCostoItem = (item: any): number => calcularCostoBase(item.horasTrabajadas);
+
+const presupuestoTotal = computed(() => {
+  const sumaItems = items.value
+    .filter(item => selectedItems.value.includes(item.value))
+    .reduce((total, item) => total + calcularCostoItem(item), 0);
+  return sumaItems + costoViaticosTotal.value;
+});
+
+const precioFinanciado = computed(() => {
+  const total = presupuestoTotal.value;
+  if (total === 0) return 0;
+  const inflacionMensual = props.config.inflacionAnual / 12 / 100;
+  return total + (total * mesesProyectados.value * inflacionMensual);
+});
+
+// Helpers
+const handleUpdateMonthsRemaining = (months: number) => mesesProyectados.value = months;
+const formatearMoneda = (valor: number): string => new Intl.NumberFormat('es-AR').format(valor || 0);
+
+const compartir = (red: string) => {
+  const totalFormat = formatearMoneda(presupuestoTotal.value);
+  const finanFormat = formatearMoneda(precioFinanciado.value);
+  let texto = `¡Hola! Te comparto la cotización para tu evento de 15 Años:\n\n*Total Hoy:* $${totalFormat}\n`;
+  if (mesesProyectados.value >= 1) texto += `*Financiado (${mesesProyectados.value} meses):* $${finanFormat}\n`;
+  const urlMensaje = encodeURIComponent(texto);
+  
+  if (red === 'whatsapp') window.open(`https://wa.me/?text=${urlMensaje}`, '_blank');
+  if (red === 'instagram') window.open(`instagram://direct?text=${urlMensaje}`, '_blank');
+  if (red === 'facebook') window.open(`fb-messenger://share?link=${encodeURIComponent(window.location.href)}&text=${urlMensaje}`, '_blank');
+};
 </script>
 
-
-
 <style scoped>
-/* Estilos Generales */
-.presupuesto-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 10px;
-  font-family: 'Arial', sans-serif;
-  background-color: #f5f5f5;
-  border-radius: 10px; /* Borde redondeado de 10px */
-
-}
-
-/* Contenedor de la imagen */
-.logo-container {
-  width: 100px; /* Ajusta el tamaño del contenedor según tus necesidades */
-  height: 100px; /* Ajusta el tamaño del contenedor según tus necesidades */
-  background-color: white; /* Fondo blanco */
-  border-radius: 50%; /* Esquinas redondeadas */
-  overflow: hidden; /* Asegura que la imagen no sobresalga del contenedor redondeado */
-  margin: 0 auto; /* Centra el contenedor horizontalmente */
-}
-
-.logo-image {
-  width: 100%; /* Ajusta el ancho de la imagen según tus necesidades */
-  height: auto;
-  display: block;
-}
-
-.titulo {
-  font-size: 20px;
-  margin-bottom: 15px;
-  color: #333;
-}
-
-/* Secciones */
-.seccion-precio,
-.seccion-hora-extra,
-.seccion-meses-proyeccion,
-.seccion-inflacion-anual,
-.seccion-items,
-.resultados {
-  background-color: #fff;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  margin-bottom: 15px;
-}
-
-.subtitulo {
-  font-size: 16px;
-  margin-bottom: 10px;
-  color: #555;
-}
-
-/* Elementos de Item */
-.item-container {
-  flex-direction: column;
-  margin-bottom: 10px;
-}
-
-.item-label,
-.horas-input,
-.costo-text {
-  width: 100%;
-  margin-right: 0;
-}
-
-.horas-input {
-  width: 60px;
-  margin-right: 10px;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-
-.costo-text {
-  font-size: 12px;
-  color: #777;
-  margin-top: 5px;
-}
-
-/* Resultados */
-.total-presupuesto,
-.precio-financiado {
-  font-size: 16px;
-  margin-bottom: 10px;
-  color: #333;
-}
-
-/* Estilos para Inputs específicos */
-.seccion-precio input,
-.seccion-hora-extra input,
-.seccion-meses-proyeccion input,
-.seccion-inflacion-anual input {
-  width: 100%;
-  padding: 10px; /* Ajusta el padding según tus preferencias */
-  margin-bottom: 10px; /* Espaciado inferior */
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-  font-size: 14px; /* Ajusta el tamaño de fuente según tus preferencias */
-}
-
-/* Ajustes para Dispositivos Móviles */
-@media screen and (max-width: 600px) {
-  .seccion-precio input,
-  .seccion-hora-extra input,
-  .seccion-meses-proyeccion input,
-  .seccion-inflacion-anual input {
-    margin-bottom: 15px; /* Añade más espacio inferior en dispositivos móviles */
-  }
-}
-
-/* Estilos para los botones de compartir */
-
-
-.botones-container {
-  text-align: center; /* Centra los elementos */
-}
-
-.compartir-titulo {
-  margin-bottom: 10px; /* Espacio inferior */
-}
-
-.botones-compartir {
-  display: inline-block; /* Alinea los botones en línea */
-}
-
-.botones-compartir button {
-  width: 50px; /* Ancho del botón */
-  height: 50px; /* Altura del botón */
-  margin: 0 10px; /* Espacio horizontal entre botones */
-  display: inline-block;
-  background-size: cover; /* Ajusta el tamaño de la imagen */
-  background-repeat: no-repeat; /* Evita la repetición de la imagen */
-  border: none; /* Elimina el borde del botón */
-  border-radius: 50%; /* Forma redondeada */
-  cursor: pointer; /* Cambia el cursor al pasar por encima */
-  transition: background-color 0.3s; /* Transición para el efecto hover */
-}
-
-.botones-compartir button:hover {
-  background-color: #ccc; /* Cambia el color al pasar el cursor por encima */
-}
-
-.facebook-button {
-  background-image: url('https://e7.pngegg.com/pngimages/335/1001/png-clipart-social-media-facebook-computer-icons-social-network-linkedin-text-logo-internet.png');
-}
-
-.whatsapp-button {
-  background-image: url('https://e7.pngegg.com/pngimages/347/373/png-clipart-computer-icons-whatsapp-whatsapp-text-trademark-thumbnail.png');
-}
-
-.instagram-button {
-  background-image: url('https://e7.pngegg.com/pngimages/722/1011/png-clipart-logo-icon-instagram-logo-instagram-logo-purple-violet-thumbnail.png');
-}
-
-.telegram-button {
-  background-image: url('https://e7.pngegg.com/pngimages/402/10/png-clipart-telegram-logo-scalable-graphics-icon-logo-blue-angle-thumbnail.png');
-}
-
-.email-button {
-  background-image: url('https://e7.pngegg.com/pngimages/191/108/png-clipart-computer-icons-email-email-miscellaneous-blue-thumbnail.png');
-}
-
-
-
+/* Los mismos estilos limpios de la tarjeta que te pasé en el mensaje anterior */
+.presupuesto-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); font-family: 'Inter', sans-serif; color: #333; }
+.titulo-calc { text-align: center; color: #1e293b; margin-bottom: 25px; font-size: 22px; }
+.configuracion-evento { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 25px; }
+.label-destacado { display: block; font-size: 16px; font-weight: bold; color: #1e293b; margin-bottom: 10px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; }
+.meses-box, .viaticos-box { margin-top: 15px; }
+.meses-box label, .viaticos-box label { display: block; font-size: 13px; color: #475569; margin-bottom: 5px; }
+.input-corto { width: 80px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; }
+.input-prefix { display: flex; align-items: center; background: white; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; width: max-content; }
+.input-prefix .suffix { padding: 8px 10px; background: #e2e8f0; color: #475569; font-weight: bold; }
+.input-prefix input { border: none; padding: 8px; width: 100px; outline: none; }
+.texto-costo { font-size: 14px; color: #2563eb; margin-top: 5px; }
+.seccion-items { margin-bottom: 30px; }
+.item-fila { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; transition: all 0.2s; }
+.item-fila.seleccionado { border-color: #2563eb; background: #eff6ff; }
+.item-checkbox { flex: 2; min-width: 200px; display: flex; align-items: center; gap: 10px; font-weight: bold; }
+.item-checkbox input { width: 18px; height: 18px; cursor: pointer; }
+.item-horas { flex: 1; min-width: 100px; display: flex; align-items: center; gap: 10px; }
+.item-subtotal { flex: 1; min-width: 100px; text-align: right; font-weight: bold; font-size: 16px; color: #0f172a; }
+.inactivo { color: #94a3b8; font-weight: normal; font-size: 14px; }
+.resultados-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+.res-item { background: #f1f5f9; padding: 20px; border-radius: 8px; text-align: center; border: 1px solid #cbd5e1; }
+.res-item span { display: block; font-size: 13px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+.res-item h2 { margin: 0; color: #1e293b; font-size: 24px; }
+.res-item.destacado { background: #2563eb; color: white; border-color: #1d4ed8; }
+.res-item.destacado span { color: #bfdbfe; }
+.res-item.destacado h2 { color: white; }
+.compartir-panel h4 { margin: 0 0 15px 0; text-align: center; color: #475569; }
+.botones-compartir { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.btn-share { border: none; padding: 10px 15px; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: opacity 0.2s; }
+.btn-share:hover { opacity: 0.85; }
+.btn-share.ws { background: #25D366; }
+.btn-share.ig { background: #E1306C; }
+.btn-share.fb { background: #0084FF; }
+@media (max-width: 600px) { .item-fila { flex-direction: column; align-items: flex-start; } .item-subtotal { width: 100%; text-align: left; } }
 </style>

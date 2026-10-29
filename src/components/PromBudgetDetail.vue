@@ -1,420 +1,245 @@
 <template>
-    <div class="presupuesto-container">  
-      <h1 class="titulo">Calculador de Presupuesto para Egresados</h1>
-  
-      <!-- Sección de Precio Base -->
-      <div class="seccion-precio" v-if="isAdminLoggedIn">
-        <label>Precio por 2 horas de cobertura </label>
-        <input v-model="precioBase" type="number" />
-      </div>
-  
-      <!-- Sección de Valor Hora Extra -->
-      <div class="seccion-hora-extra" v-if="isAdminLoggedIn">
-        <label>Precio por hora extra </label>
-        <input v-model="costoHoraExtra" type="number" />
-      </div>
-  
-      <!-- Sección de Meses de Proyección -->
-      <div class="seccion-meses-proyeccion">
-        <label for="service-select">Fecha del evento:</label>
+  <div class="presupuesto-card">
+    <h2 class="titulo-calc">🎓 Detalle de Cotización: Egresados</h2>
+
+    <!-- SECCIÓN: FECHA, DISTANCIA Y EGRESADOS -->
+    <div class="configuracion-evento tres-columnas">
+      <div class="seccion-fecha">
+        <label class="label-destacado">📅 Fecha del evento:</label>
         <DateSelected @updateMonthsRemaining="handleUpdateMonthsRemaining" />
-        <br>
-        <label>Cantidad de meses para el evento </label>
-        <input v-model="mesesProyectados" type="number" />
+        
+        <div class="meses-box">
+          <label>Meses restantes para el evento:</label>
+          <input v-model.number="mesesProyectados" type="number" class="input-corto" />
+        </div>
       </div>
 
-      <!-- Sección de Inflación Anual -->
-      <div class="seccion-inflacion-anual" v-if="isAdminLoggedIn">
-        <label>Inflación interanual %</label>
-        <input v-model="inflacionAnual" type="number" /> 
+      <div class="seccion-viaticos">
+        <label class="label-destacado">🚗 Viáticos (Traslado)</label>
+        <div class="viaticos-box">
+          <label>Distancia Ida y Vuelta (KM):</label>
+          <div class="input-prefix">
+            <input v-model.number="kmDistancia" type="number" placeholder="Ej: 120" />
+            <span class="suffix">KM</span>
+          </div>
+        </div>
+        <p v-if="kmDistancia > 0" class="texto-costo">Costo de traslado: <strong>$ {{ formatearMoneda(costoViaticosTotal) }}</strong></p>
       </div>
-  
-      <!-- Sección de Items -->
-      <div class="seccion-items">
 
-        <label class="subtitulo">Selecciona los Items</label>
-        <div v-for="item in items" :key="item.value" class="item-container">
-          <input
-            type="checkbox"
-            :id="item.value"
-            :value="item.value"
-            v-model="selectedItems"
-          />
-          <label :for="item.value" class="item-label">{{ item.label }}</label>
-          <input
-            type="number"
-            :id="item.value + 'Horas'"
-            v-model="item.horasTrabajadas"
-            :disabled="!selectedItems.includes(item.value)"
-            class="horas-input"
-          />
-          <label :for="item.value + 'Horas'" class="item-label">Horas Trabajadas</label>
-          <p v-if="selectedItems.includes(item.value)" class="costo-text">
-            Costo {{ item.label }}: $ {{ calcularCostoItem(item) }}
-          </p>
+      <div class="seccion-egresados">
+        <label class="label-destacado">🎓 Egresados</label>
+        <div class="egresados-box">
+          <label>Cantidad de Egresados:</label>
+          <div class="input-prefix">
+            <input v-model.number="cantidadEgresados" type="number" min="1" />
+            <span class="suffix">Alumnos</span>
+          </div>
+        </div>
+        <p class="texto-info">Cálculo base hasta 25 egresados.</p>
+      </div>
+    </div>
+
+    <!-- SECCIÓN: ITEMS DEL SERVICIO ESPECÍFICOS DE EGRESADOS -->
+    <div class="seccion-items">
+      <h3 class="label-destacado">📸 Selecciona los Servicios</h3>
+      
+      <div v-for="item in items" :key="item.value" class="item-fila" :class="{ 'seleccionado': selectedItems.includes(item.value) }">
+        <div class="item-checkbox">
+          <input type="checkbox" :id="item.value" :value="item.value" v-model="selectedItems" />
+          <label :for="item.value">{{ item.label }}</label>
+        </div>
+        
+        <div class="item-horas">
+          <label :for="item.value + 'Horas'">Horas:</label>
+          <input type="number" :id="item.value + 'Horas'" v-model.number="item.horasTrabajadas" :disabled="!selectedItems.includes(item.value)" class="input-corto" min="1"/>
         </div>
 
-
-      </div>
-        <!-- Cantidad de Egresados -->
-        <div class="seccion-inflacion-anual">
-            <label>Cantidad de Egresados </label>
-            <input v-model="cantidadEgresados" type="number" min="0"/> 
+        <div class="item-subtotal">
+          <span v-if="selectedItems.includes(item.value)">
+            $ {{ formatearMoneda(calcularCostoItem(item)) }}
+          </span>
+          <span v-else class="inactivo">No incluido</span>
         </div>
-
-      <!-- Resultados -->
-      <div class="resultados">
-        <h2 class="subtitulo">Resultado del Presupuesto</h2>
-
-        <p class="total-presupuesto">Total Presupuesto: $ {{ mostrarPresupuesto }}</p>
-
-        <p class="precio-por-egresado">Precio por Egresado: $ {{ mostrarPrecioPorEgresado }}</p>
-
-        <p v-if="mesesProyectados >= 0 && cantidadEgresados > 0 && cantidadEgresados <= 25" class="precio-financiado">
-          Precio Financiado por {{ cantidadEgresados }} egresados a {{ mesesProyectados }} meses: $ {{ mostrarPrecioFinanciado }}
-        </p>
-
-        <p v-if="cantidadEgresados > 25 && mesesProyectados >= 1" class="precio-financiado">
-          Precio Financiado por {{ cantidadEgresados }} egresados a {{ mesesProyectados }} meses: $ {{ (parseFloat(mostrarPrecioPorEgresado) * cantidadEgresados).toFixed(2) }}
-        </p>
       </div>
-  
-      <!--Compartir presupuesto -->
-      <div class="botones-container">
-      <h3 class="compartir-titulo">Compartir Presupuesto</h3>
-  
+    </div>
+
+    <!-- RESULTADOS FINALES -->
+    <div class="resultados-panel">
+      <div class="res-item">
+        <span>Total Presupuesto Hoy:</span>
+        <h2>$ {{ formatearMoneda(presupuestoBaseHoy) }}</h2>
+      </div>
+      
+      <div class="res-item destacado-claro" v-if="mesesProyectados >= 0 && cantidadEgresados > 0">
+        <span>Precio Financiado por Egresado:</span>
+        <h2>$ {{ formatearMoneda(precioPorEgresado) }}</h2>
+      </div>
+
+      <div class="res-item destacado" v-if="mesesProyectados >= 0 && cantidadEgresados > 0">
+        <span>Total Financiado ({{ cantidadEgresados }} alum. a {{ mesesProyectados }} meses):</span>
+        <h2>$ {{ formatearMoneda(presupuestoTotalFinanciado) }}</h2>
+      </div>
+    </div>
+
+    <!-- COMPARTIR -->
+    <div class="compartir-panel">
+      <h4>Compartir Cotización</h4>
       <div class="botones-compartir">
-        <button class="facebook-button" @click="compartirPorFacebookMessenger"></button>
-  
-        <button class="whatsapp-button" @click="compartirPorWhatsApp"></button>
-        
-        <button class="instagram-button" @click="compartirPorInstagram"></button>
-  
-        <button class="telegram-button" @click="compartirPorTelegram"></button>
-  
-        <button class="email-button" @click="compartirPorEmail"></button>
+        <button class="btn-share ws" @click="compartir('whatsapp')" title="WhatsApp">📱 WhatsApp</button>
+        <button class="btn-share ig" @click="compartir('instagram')" title="Instagram">📸 Instagram</button>
+        <button class="btn-share fb" @click="compartir('facebook')" title="Messenger">💬 Messenger</button>
       </div>
     </div>
-  
-  
-    </div>
+  </div>
 </template>
-  
-  
-<script lang="ts">
-  import { defineComponent } from 'vue';
-  import DateSelected from './DateSelected.vue';
 
-  
-  export default defineComponent({
-    components: {
-      DateSelected
-    },
-    props: {
-      isAdminLoggedIn: {
-        type: Boolean,
-        required: true
-      }
-    },
-    setup(props) {
-      console.log("El estado del admin es:", props.isAdminLoggedIn);
+<script setup lang="ts">
+import { ref, computed, defineProps } from 'vue';
+import DateSelected from './DateSelected.vue'; 
 
-      // Aquí puedes retornar cualquier cosa que desees utilizar dentro del componente
-      return {};
-    },
-    data() {
-      return {
-        precioBase: 150000,
-        costoHoraExtra: 45000,
-        mesesProyectados: 0,
-        inflacionAnual: 36.6,
-        cantidadEgresados: 25,
-        selectedItems: [] as string[],
-        items: [
-          { label: 'Fiesta de egreso ', value: 'fiesta', horasTrabajadas: 9 },
-          { label: 'Fiesta de egreso Segunda Camara ', value: 'octavoItem', horasTrabajadas: 7 },
-          { label: 'Acto de entrega de diplomas ', value: 'segundoItem', horasTrabajadas: 2 },
-          { label: 'Sesion de fotos / Book ', value: 'tercerItem', horasTrabajadas: 3 },
-          { label: 'Ultimo primer dia de clases ', value: 'cuartoItem', horasTrabajadas: 1 },
-          { label: 'Ultimo dia de clases ', value: 'quintoItem', horasTrabajadas: 1 },
-          { label: 'Festejos del dia del estudiante ', value: 'sextoItem', horasTrabajadas: 2 },
-          { label: 'Danzante ', value: 'septimoItem', horasTrabajadas: 4 },
-        ] as { label: string; value: string; horasTrabajadas: number }[],
-      };
-    },
-  
-    methods: {
-      calcularPresupuestoTotal(): number {
-        return this.items
-          .filter(item => this.selectedItems.includes(item.value))
-          .reduce((total, item) => total + this.calcularCostoItem(item), 0);
-      },
-      calcularCostoItem(item: { label: string; value: string; horasTrabajadas: number }): number {
-        const costoBase = this.calcularCostoBase(item.horasTrabajadas);
-        return costoBase * this.calcularInflacionProyectada();
-      },
-      calcularCostoBase(horasTrabajadas: number): number {
-        if (horasTrabajadas === 2) {
-          return this.precioBase;
-        } else if (horasTrabajadas > 2) {
-          return this.precioBase + ((horasTrabajadas - 2) * this.costoHoraExtra);
-        } else if (horasTrabajadas === 1) {
-          return this.precioBase / 2;
-        } else {
-          return 0;
-        }
-      },
-      calcularInflacionProyectada(): number {
-        // Tu lógica de cálculo de inflación proyectada aquí
-        return 1;
-      },
-      calcularPresupuesto(): number {
-        return this.items
-          .filter(item => this.selectedItems.includes(item.value))
-          .reduce((total, item) => total + this.calcularCostoItem(item), 0);
-      },
-      calcularPrecioFinanciado(): string {
-        const presupuesto = this.calcularPresupuesto();
-        const inflacionMensual = this.inflacionAnual / 12 / 100;
-        const resultado = presupuesto + presupuesto * this.mesesProyectados * inflacionMensual;
-  
-        if (resultado && typeof resultado === 'number') {
-          return resultado.toFixed(2);
-        } else {
-          return '0.00';
-        }
-      },
-  
-      generarMensajeCompartir(): string {
-        let mensaje: string;
-        const precioPorEgresado = this.mostrarPrecioPorEgresado;
-        const mesesProyectados = this.mesesProyectados;
-        const presupuestoTotal = this.mostrarPresupuesto;
-
-        if (this.cantidadEgresados <= 25) {
-          const presupuestoTotalFinanciado = this.mostrarPrecioFinanciado;
-          mensaje = `¡Hola! Te comparto el presupuesto calculado:
-            - Total Presupuesto: $${presupuestoTotal}
-            - Precio financiado por Egresado: $${precioPorEgresado}
-            - Cantidad de Egresados: ${this.cantidadEgresados}
-            - Meses para la Financiación: ${mesesProyectados}
-            - Presupuesto Total Financiado: $${presupuestoTotalFinanciado}`;
-        } else {
-          const presupuestoTotalFinanciado = (parseFloat(precioPorEgresado) * this.cantidadEgresados).toFixed(2);
-          mensaje = `¡Hola! Te comparto el presupuesto calculado:
-            - Total Presupuesto: $${presupuestoTotal}
-            - Precio financiado por Egresado: $${precioPorEgresado}
-            - Cantidad de Egresados: ${this.cantidadEgresados}
-            - Meses para la Financiación: ${mesesProyectados}
-            - Presupuesto Total Financiado: $${presupuestoTotalFinanciado}`;
-        }
-        return mensaje;
-      },
-
-        
-      compartirPorWhatsApp() {
-        const mensaje = encodeURIComponent(this.generarMensajeCompartir());
-        const url = "https://wa.me/?text=" + mensaje;
-        window.open(url, '_blank');
-      },
-      compartirPorInstagram() {
-        const mensaje = encodeURIComponent(this.generarMensajeCompartir());
-        const url = "instagram://direct?text=" + mensaje;
-        window.open(url, '_blank');
-      },
-      compartirPorFacebookMessenger() {
-        const mensaje = encodeURIComponent(this.generarMensajeCompartir());
-        const url = "fb-messenger://share?link=" + encodeURIComponent(window.location.href) + "&app_id=123456789&text=" + mensaje;
-        window.open(url, '_blank');
-      },
-      compartirPorTelegram() {
-        const mensaje = encodeURIComponent(this.generarMensajeCompartir());
-        const url = "https://t.me/share/url?url=&text=" + mensaje;
-        window.open(url, '_blank');
-      },
-      compartirPorEmail() {
-        const asunto = encodeURIComponent("Presupuesto Compartido");
-        const cuerpo = encodeURIComponent(this.generarMensajeCompartir());
-        const url = "mailto:?subject=" + asunto + "&body=" + cuerpo;
-        window.open(url, '_blank');
-      },
-      handleUpdateMonthsRemaining(...args: unknown[]): void {
-        const monthsRemaining = args[0] as number;
-        // Aquí puedes realizar cualquier lógica adicional, como validar el valor recibido
-        // y luego actualizar el estado o realizar otras acciones según sea necesario.
-        this.mesesProyectados = monthsRemaining;
-      },
-    },
-  
-    computed: {
-      mostrarPresupuesto(): string {
-        const presupuesto = this.calcularPresupuesto();
-        return presupuesto && typeof presupuesto === 'number' ? presupuesto.toFixed(2) : '0.00';
-      },
-      mostrarPrecioFinanciado(): string {
-        const precioFinanciado = this.calcularPrecioFinanciado();
-        return precioFinanciado && typeof precioFinanciado === 'string' ? precioFinanciado : '0.00';
-      },
-      mostrarPrecioPorEgresado(): string {
-        if (this.cantidadEgresados >= 1 && this.cantidadEgresados <= 25) {
-            return (parseFloat(this.mostrarPrecioFinanciado) / this.cantidadEgresados).toFixed(2);
-        } else if (this.cantidadEgresados > 25) {
-            return ((parseFloat(this.mostrarPrecioFinanciado) / 25) * 1).toFixed(2);
-        } else {
-            return '0.00'; // En caso de que no haya datos suficientes, mostrar 0.00
-        }
-        },
-    },
-  });
-</script>
-  
-<style scoped>
-/* Estilos Generales */
-.presupuesto-container {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 10px;
-  font-family: 'Arial', sans-serif;
-  background-color: #f5f5f5;
-  border-radius: 10px;
-}
-
-.titulo {
-  font-size: 20px;
-  margin-bottom: 15px;
-  color: #333;
-  text-align: center;
-}
-
-/* Secciones */
-.seccion-precio,
-.seccion-hora-extra,
-.seccion-meses-proyeccion,
-.seccion-inflacion-anual,
-.seccion-items,
-.resultados {
-  background-color: #fff;
-  padding: 15px;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  margin-bottom: 15px;
-}
-
-.subtitulo {
-  font-size: 16px;
-  margin-bottom: 10px;
-  color: #555;
-}
-
-/* Elementos de Item */
-.item-container {
-  flex-direction: column;
-  margin-bottom: 10px;
-}
-
-.item-label,
-.horas-input,
-.costo-text {
-  width: 100%;
-  margin-right: 0;
-}
-
-.horas-input {
-  width: 60px;
-  margin-right: 10px;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-
-.costo-text {
-  font-size: 12px;
-  color: #777;
-  margin-top: 5px;
-}
-
-/* Resultados */
-.total-presupuesto,
-.precio-financiado,
-.precio-por-egresado {
-  font-size: 16px;
-  margin-bottom: 10px;
-  color: #333;
-}
-
-/* Estilos para Inputs específicos */
-.seccion-precio input,
-.seccion-hora-extra input,
-.seccion-meses-proyeccion input,
-.seccion-inflacion-anual input {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-  font-size: 14px;
-}
-
-/* Ajustes para Dispositivos Móviles */
-@media screen and (max-width: 600px) {
-  .seccion-precio input,
-  .seccion-hora-extra input,
-  .seccion-meses-proyeccion input,
-  .seccion-inflacion-anual input {
-    margin-bottom: 15px;
+// Recibimos los precios globales que nos pasa BudgetView
+const props = defineProps({
+  isAdminLoggedIn: Boolean,
+  config: {
+    type: Object,
+    required: true
   }
-}
+});
 
-/* Estilos para los botones de compartir */
-.botones-container {
-  text-align: center;
-}
+// Variables de cálculo
+const mesesProyectados = ref(0);
+const kmDistancia = ref(0);
+const cantidadEgresados = ref(25);
+const selectedItems = ref<string[]>([]);
 
-.compartir-titulo {
-  margin-bottom: 10px;
-}
+// Ítems específicos de Egresados
+const items = ref([
+  { label: 'Fiesta de egreso', value: 'fiesta', horasTrabajadas: 9 },
+  { label: 'Fiesta de egreso Segunda Cámara', value: 'octavoItem', horasTrabajadas: 7 },
+  { label: 'Acto de entrega de diplomas', value: 'segundoItem', horasTrabajadas: 2 },
+  { label: 'Sesión de fotos / Book', value: 'tercerItem', horasTrabajadas: 3 },
+  { label: 'Último primer día de clases', value: 'cuartoItem', horasTrabajadas: 1 },
+  { label: 'Último día de clases', value: 'quintoItem', horasTrabajadas: 1 },
+  { label: 'Festejos del día del estudiante', value: 'sextoItem', horasTrabajadas: 2 },
+  { label: 'Danzante', value: 'septimoItem', horasTrabajadas: 4 },
+]);
 
-.botones-compartir {
-  display: inline-block;
-}
+// --- CÁLCULOS PRINCIPALES ---
+const costoViaticosTotal = computed(() => kmDistancia.value > 0 ? (kmDistancia.value * props.config.costoKm) : 0);
 
-.botones-compartir button {
-  width: 50px;
-  height: 50px;
-  margin: 0 10px;
-  display: inline-block;
-  background-size: cover;
-  background-repeat: no-repeat;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
+const calcularCostoBase = (horas: number): number => {
+  if (horas === 2) return props.config.precioBase;
+  if (horas > 2) return props.config.precioBase + ((horas - 2) * props.config.costoHoraExtra);
+  if (horas === 1) return props.config.precioBase / 2;
+  return 0;
+};
 
-.botones-compartir button:hover {
-  background-color: #ccc;
-}
+const calcularCostoItem = (item: any): number => calcularCostoBase(item.horasTrabajadas);
 
-.facebook-button {
-  background-image: url('https://e7.pngegg.com/pngimages/335/1001/png-clipart-social-media-facebook-computer-icons-social-network-linkedin-text-logo-internet.png');
-}
+const presupuestoBaseHoy = computed(() => {
+  const sumaItems = items.value
+    .filter(item => selectedItems.value.includes(item.value))
+    .reduce((total, item) => total + calcularCostoItem(item), 0);
+  return sumaItems + costoViaticosTotal.value;
+});
 
-.whatsapp-button {
-  background-image: url('https://e7.pngegg.com/pngimages/347/373/png-clipart-computer-icons-whatsapp-whatsapp-text-trademark-thumbnail.png');
-}
+// Calcula el precio financiado base general (Sin dividir aún)
+const precioFinanciadoBase = computed(() => {
+  const total = presupuestoBaseHoy.value;
+  if (total === 0) return 0;
+  const inflacionMensual = props.config.inflacionAnual / 12 / 100;
+  return total + (total * mesesProyectados.value * inflacionMensual);
+});
 
-.instagram-button {
-  background-image: url('https://e7.pngegg.com/pngimages/722/1011/png-clipart-logo-icon-instagram-logo-instagram-logo-purple-violet-thumbnail.png');
-}
+// Lógica original: Si son menos o igual a 25, se divide normal. Si son más, se topa el divisor en 25.
+const precioPorEgresado = computed(() => {
+  if (cantidadEgresados.value >= 1 && cantidadEgresados.value <= 25) {
+    return precioFinanciadoBase.value / cantidadEgresados.value;
+  } else if (cantidadEgresados.value > 25) {
+    return precioFinanciadoBase.value / 25; 
+  }
+  return 0;
+});
 
-.telegram-button {
-  background-image: url('https://e7.pngegg.com/pngimages/402/10/png-clipart-telegram-logo-scalable-graphics-icon-logo-blue-angle-thumbnail.png');
-}
+// Calcula el total absoluto a cobrar (precioEgresado * total de alumnos)
+const presupuestoTotalFinanciado = computed(() => {
+  if (cantidadEgresados.value <= 25) {
+    return precioFinanciadoBase.value;
+  } else {
+    return precioPorEgresado.value * cantidadEgresados.value;
+  }
+});
 
-.email-button {
-  background-image: url('https://e7.pngegg.com/pngimages/191/108/png-clipart-computer-icons-email-email-miscellaneous-blue-thumbnail.png');
-}
+// --- HELPERS Y COMPARTIR ---
+const handleUpdateMonthsRemaining = (months: number) => mesesProyectados.value = months;
+const formatearMoneda = (valor: number): string => new Intl.NumberFormat('es-AR').format(valor || 0);
+
+const compartir = (red: string) => {
+  const totalFormat = formatearMoneda(presupuestoBaseHoy.value);
+  const precioEgresadoFormat = formatearMoneda(precioPorEgresado.value);
+  const totalFinanFormat = formatearMoneda(presupuestoTotalFinanciado.value);
+
+  const mensaje = `¡Hola! Te comparto el presupuesto calculado:\n\n` +
+    `- Total Presupuesto Hoy: $${totalFormat}\n` +
+    `- Precio financiado por Egresado: $${precioEgresadoFormat}\n` +
+    `- Cantidad de Egresados: ${cantidadEgresados.value}\n` +
+    `- Meses para la Financiación: ${mesesProyectados.value}\n` +
+    `- Presupuesto Total Financiado: $${totalFinanFormat}`;
+  
+  const urlMensaje = encodeURIComponent(mensaje);
+  
+  if (red === 'whatsapp') window.open(`https://wa.me/?text=${urlMensaje}`, '_blank');
+  if (red === 'instagram') window.open(`instagram://direct?text=${urlMensaje}`, '_blank');
+  if (red === 'facebook') window.open(`fb-messenger://share?link=${encodeURIComponent(window.location.href)}&text=${urlMensaje}`, '_blank');
+};
+</script>
+
+<style scoped>
+/* Estilos modernos compartidos */
+.presupuesto-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); font-family: 'Inter', sans-serif; color: #333; }
+.titulo-calc { text-align: center; color: #1e293b; margin-bottom: 25px; font-size: 22px; }
+.configuracion-evento { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }
+.tres-columnas { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.label-destacado { display: block; font-size: 16px; font-weight: bold; color: #1e293b; margin-bottom: 10px; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px; }
+.meses-box, .viaticos-box, .egresados-box { margin-top: 15px; }
+.meses-box label, .viaticos-box label, .egresados-box label { display: block; font-size: 13px; color: #475569; margin-bottom: 5px; }
+.input-corto { width: 80px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; }
+.input-prefix { display: flex; align-items: center; background: white; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden; width: max-content; }
+.input-prefix .suffix { padding: 8px 10px; background: #e2e8f0; color: #475569; font-weight: bold; font-size: 12px; }
+.input-prefix input { border: none; padding: 8px; width: 80px; outline: none; }
+.texto-costo, .texto-info { font-size: 13px; color: #2563eb; margin-top: 5px; }
+.texto-info { color: #64748b; font-style: italic; }
+
+.seccion-items { margin-bottom: 30px; }
+.item-fila { display: flex; align-items: center; justify-content: space-between; padding: 12px 15px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 10px; flex-wrap: wrap; gap: 10px; transition: all 0.2s; }
+.item-fila.seleccionado { border-color: #2563eb; background: #eff6ff; }
+.item-checkbox { flex: 2; min-width: 180px; display: flex; align-items: center; gap: 10px; font-weight: bold; }
+.item-checkbox input { width: 18px; height: 18px; cursor: pointer; }
+.item-horas { flex: 1; min-width: 100px; display: flex; align-items: center; gap: 10px; }
+.item-subtotal { flex: 1; min-width: 100px; text-align: right; font-weight: bold; font-size: 16px; color: #0f172a; }
+.inactivo { color: #94a3b8; font-weight: normal; font-size: 14px; }
+
+/* Grid de resultados ajustado para 3 cajas */
+.resultados-panel { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+.res-item { background: #f1f5f9; padding: 20px; border-radius: 8px; text-align: center; border: 1px solid #cbd5e1; display: flex; flex-direction: column; justify-content: center;}
+.res-item span { display: block; font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+.res-item h2 { margin: 0; color: #1e293b; font-size: 22px; }
+
+.res-item.destacado-claro { background: #eff6ff; border-color: #93c5fd; }
+.res-item.destacado-claro span { color: #1e40af; }
+.res-item.destacado-claro h2 { color: #1d4ed8; }
+
+.res-item.destacado { background: #2563eb; color: white; border-color: #1d4ed8; }
+.res-item.destacado span { color: #bfdbfe; }
+.res-item.destacado h2 { color: white; }
+
+.compartir-panel h4 { margin: 0 0 15px 0; text-align: center; color: #475569; }
+.botones-compartir { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.btn-share { border: none; padding: 10px 15px; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: opacity 0.2s; }
+.btn-share:hover { opacity: 0.85; }
+.btn-share.ws { background: #25D366; }
+.btn-share.ig { background: #E1306C; }
+.btn-share.fb { background: #0084FF; }
+
+@media (max-width: 600px) { .item-fila { flex-direction: column; align-items: flex-start; } .item-subtotal { width: 100%; text-align: left; } }
 </style>
-
