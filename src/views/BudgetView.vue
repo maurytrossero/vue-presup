@@ -89,7 +89,8 @@ const configGlobal = ref({
   nombre_empresa: 'MT Producciones',
   nombre_firmante: 'Mauricio Trossero',
   rubro_servicio: 'Fotografía y Video Profesional',
-  logo_url: 'https://dl.dropboxusercontent.com/scl/fi/88du6azdw0ra19avnk31l/mt.jpg?rlkey=aqiids5q04l4fmymp0j4bjhru&st=avkk9osm'
+  logo_url: 'https://dl.dropboxusercontent.com/scl/fi/88du6azdw0ra19avnk31l/mt.jpg?rlkey=aqiids5q04l4fmymp0j4bjhru&st=avkk9osm',
+  telefono: '(3564) 6074890' 
 });
 const selectedComponent = computed(() => ({
   fifteen: FifteenBudgetDetail,

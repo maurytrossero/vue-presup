@@ -21,6 +21,7 @@ interface DatosPresupuestoPDF {
     nombre_firmante?: string;
     rubro_servicio?: string;
     logo_url?: string;
+    telefono?: string; // NUEVO: Campo para el WhatsApp de contacto
   };
 }
 
@@ -28,7 +29,7 @@ const formatearMoneda = (valor: number): string => {
   return new Intl.NumberFormat('es-AR').format(valor || 0);
 };
 
-// Nueva función: Redondear al múltiplo de 1000 más cercano
+// Redondear al múltiplo de 1000 más cercano para cifras más comerciales
 const redondearAMil = (valor: number): number => {
   return Math.round(valor / 1000) * 1000;
 };
@@ -94,7 +95,11 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
     doc.setFont("helvetica", "normal");
     doc.setTextColor(100, 116, 139);
     doc.text(rubroServicio, xOffset, 27);
-    doc.text("WhatsApp / Contacto Profesional", xOffset, 32);
+    
+    // LÓGICA DINÁMICA DE CONTACTO: Solo imprime si existe el teléfono
+    if (perfil.telefono && perfil.telefono.trim() !== '') {
+      doc.text(`WhatsApp: ${perfil.telefono}`, xOffset, 32);
+    }
 
     doc.text(`Fecha: ${new Date().toLocaleDateString('es-AR')}`, 190, 22, { align: 'right' });
     doc.text("Validez: 15 días", 190, 27, { align: 'right' });
@@ -132,8 +137,8 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
     doc.rect(20, y, 170, 8, 'F');
     doc.setFontSize(9);
     doc.setTextColor(71, 85, 105);
-    doc.text("Servicio / Cobertura", 25, y + 5.5);
-    doc.text("Subtotal", 175, y + 5.5, { align: 'right' });
+    doc.text("Servicio / Cobertura detallada", 25, y + 5.5);
+    // Nota: Eliminamos el texto "Subtotal" para que no quede vacía esa columna
     y += 10;
 
     doc.setFont("helvetica", "normal");
@@ -156,7 +161,7 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
     y += 8;
 
     // -------------------------------------------------------------------------
-    // 4. BLOQUE COMERCIAL DE CONDICIONES Y PAGOS (Con redondeo)
+    // 4. BLOQUE COMERCIAL DE CONDICIONES Y PAGOS (Con redondeo a miles)
     // -------------------------------------------------------------------------
     const tieneMeses = datos.mesesProyectados >= 1; 
     const altoCaja = tieneMeses ? 40 : 26;
@@ -203,7 +208,7 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
     y += altoCaja + 8;
 
     // -------------------------------------------------------------------------
-    // 5. REGALO EXCLUSIVO (Solo MT Producciones)
+    // 5. REGALO EXCLUSIVO (Solo MT Producciones, Texto sin emojis)
     // -------------------------------------------------------------------------
     const esMT = nombreEmpresa.toLowerCase().includes('mt producciones');
     if (esMT) {
@@ -214,7 +219,8 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
       doc.setFontSize(9.5);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(180, 83, 9);
-      doc.text("🎁 ¡De regalo con tu contratación!", 25, y + 7);
+      // Texto limpio, sin el emoji que generaba el error de caracteres (Ø<ß•)
+      doc.text("EXCLUSIVO: ¡De regalo con tu contratación!", 25, y + 7);
 
       doc.setFont("helvetica", "normal");
       doc.setFontSize(8.5);
@@ -225,7 +231,7 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
     }
 
     // -------------------------------------------------------------------------
-    // 6. INFORMACIÓN Y RESERVAS
+    // 6. INFORMACIÓN Y RESERVAS (Textos cálidos)
     // -------------------------------------------------------------------------
     doc.setFontSize(8.5);
     doc.setFont("helvetica", "bold");
@@ -238,7 +244,7 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
     doc.text("• Presupuesto válido por 15 días. Los traslados y detalles de catering se coordinan según la locación.", 22, y);
 
     // -------------------------------------------------------------------------
-    // 7. FIRMA AUTOGENERADA (Y = 230)
+    // 7. FIRMA AUTOGENERADA (Fija en Y = 230)
     // -------------------------------------------------------------------------
     const posYFirma = 230;
 
@@ -260,7 +266,6 @@ export const generarPdfPresupuestoUniversal = (datos: DatosPresupuestoPDF) => {
     doc.save(`Presupuesto_${datos.tituloEvento.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
-  // Corrección: Pasar imgCargada correctamente
   if (logoDirecto) {
     const img = new Image();
     img.crossOrigin = "Anonymous";

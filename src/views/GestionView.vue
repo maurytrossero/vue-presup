@@ -155,6 +155,9 @@
             Si es de Google Drive o Dropbox, se convertirá automáticamente para el PDF.
           </small>
 
+          <!-- Agrega esto en tu <template> dentro del modal de configuración de perfil -->
+          <label>Número de WhatsApp de Contacto </label>
+          <input v-model="perfilUsuario.telefono" placeholder="Ej: (3564) 6074890" />
           <div v-if="perfilUsuario.logo_url" class="vista-previa-logo">
             <p>Vista previa del logo:</p>
             <img :src="convertirUrlImagen(perfilUsuario.logo_url)" alt="Logo Preview" style="max-height: 70px; object-fit: contain; border: 1px dashed #ccc; padding: 5px; border-radius: 4px;" />
@@ -287,12 +290,13 @@ const modalConfigVisible = ref(false);
 const eventoActivo = ref<any>(null);
 const eventoEdicion = ref<any>({});
 
-// Perfil predeterminado
+// Perfil predeterminado: AHORA INCLUYE TELÉFONO
 const perfilUsuario = ref({
   nombre_empresa: 'MT Producciones',
   nombre_firmante: 'Mauricio Trossero',
   rubro_servicio: 'Fotografía y Video Profesional',
-  logo_url: 'https://dl.dropboxusercontent.com/scl/fi/88du6azdw0ra19avnk31l/mt.jpg?rlkey=aqiids5q04l4fmymp0j4bjhru&st=avkk9osm'
+  logo_url: 'https://dl.dropboxusercontent.com/scl/fi/88du6azdw0ra19avnk31l/mt.jpg?rlkey=aqiids5q04l4fmymp0j4bjhru&st=avkk9osm',
+  telefono: '(3564) 6074890'
 });
 
 // Estado inicial del nuevo evento con Título y Descripción
@@ -333,20 +337,23 @@ const cargarPerfilUsuario = async () => {
   if (user) {
     const configGuardada = await obtenerConfigUsuario(user.uid);
     if (configGuardada) {
+      // Combina los datos guardados en Firestore con el perfil base
       perfilUsuario.value = { ...perfilUsuario.value, ...configGuardada };
     } else if (user.email === 'mtproduccioneshd@gmail.com') {
       perfilUsuario.value = {
         nombre_empresa: 'MT Producciones',
         nombre_firmante: 'Mauricio Trossero',
         rubro_servicio: 'Fotografía y Video Profesional',
-        logo_url: 'https://dl.dropboxusercontent.com/scl/fi/88du6azdw0ra19avnk31l/mt.jpg?rlkey=aqiids5q04l4fmymp0j4bjhru&st=avkk9osm'
+        logo_url: 'https://dl.dropboxusercontent.com/scl/fi/88du6azdw0ra19avnk31l/mt.jpg?rlkey=aqiids5q04l4fmymp0j4bjhru&st=avkk9osm',
+        telefono: '(3564) 6074890'
       };
     } else {
       perfilUsuario.value = {
         nombre_empresa: user.displayName || 'Mi Estudio',
         nombre_firmante: user.displayName || 'El Administrador',
         rubro_servicio: 'Fotografía Profesional',
-        logo_url: ''
+        logo_url: '',
+        telefono: ''
       };
     }
   }
@@ -362,8 +369,9 @@ const guardarPerfil = async () => {
   if (!user) return;
 
   try {
+    // Al guardar, se enviará también el teléfono a Firestore
     await guardarConfigUsuario(user.uid, perfilUsuario.value);
-    Swal.fire('Configuración Guardada', 'Tus datos y logo se usarán en los nuevos recibos.', 'success');
+    Swal.fire('Configuración Guardada', 'Tus datos (incluido el teléfono) se usarán en los nuevos recibos y presupuestos PDF.', 'success');
     modalConfigVisible.value = false;
   } catch (error) {
     Swal.fire('Error', 'No se pudieron guardar tus datos de perfil.', 'error');
@@ -436,7 +444,6 @@ const guardarEvento = async () => {
     return Swal.fire('Faltan datos', 'Cliente, Título, Fecha y Monto Total son obligatorios.', 'warning');
   }
 
-  // ALERTA DE COINCIDENCIA DE FECHAS
   const fechaSeleccionada = nuevoEvento.value.fecha_evento;
   const eventoExistente = eventos.value.find(ev => ev.fecha_evento === fechaSeleccionada);
 
@@ -451,7 +458,6 @@ const guardarEvento = async () => {
       confirmButtonColor: '#f59e0b'
     });
     
-    // Si el usuario cancela, detenemos la función
     if (!confirmar.isConfirmed) return;
   }
 
@@ -467,7 +473,6 @@ const guardarEvento = async () => {
     await guardarPresupuestoAdmin(eventoParaGuardar);
     Swal.fire('¡Agendado!', 'El evento se guardó correctamente.', 'success');
     
-    // Limpiamos el formulario
     nuevoEvento.value = { 
       cliente_nombre: '', 
       titulo_evento: '',
@@ -528,7 +533,6 @@ const guardarEdicionEvento = async () => {
   }
 };
 
-// --- VISOR MODAL DE NOTAS COMPLETAS ---
 const verNotasEvento = (titulo: string, descripcion: string) => {
   Swal.fire({
     title: `📝 Detalles del Evento`,
@@ -543,8 +547,6 @@ const verNotasEvento = (titulo: string, descripcion: string) => {
   });
 };
 
-
-// --- GESTIÓN DE PAGOS ---
 const abrirPago = async (evento: any) => {
   const { value: montoMandar } = await Swal.fire({
     title: 'Registrar Pago / Entrega',
@@ -658,7 +660,6 @@ const generarReciboPDF = (pago: any, indexPago = 0, accion: 'descargar' | 'previ
   const evento = eventoActivo.value;
   const logoDirecto = convertirUrlImagen(perfilUsuario.value.logo_url);
 
-  // Número de operación estructurado profesional: REC-FECHA-SECUENCIA (Ej: REC-28102026-01)
   const fechaDigits = (pago.fecha || '').replace(/[^0-9]/g, '').slice(0, 8);
   const numOperacion = `REC-${fechaDigits || '00000000'}-${(indexPago + 1).toString().padStart(2, '0')}`;
 
@@ -686,13 +687,11 @@ const generarReciboPDF = (pago: any, indexPago = 0, accion: 'descargar' | 'previ
   }
 
   function completarPDF() {
-    // 1. Marca de agua
     doc.setTextColor(230, 230, 230);
     doc.setFontSize(60);
     doc.setFont("helvetica", "bold");
     doc.text("PAGADO", 105, 150, { angle: 25, align: "center" });
 
-    // 2. Encabezados
     doc.setFont("helvetica", "bold");
     doc.setFontSize(22);
     doc.setTextColor(40, 40, 40);
@@ -707,7 +706,6 @@ const generarReciboPDF = (pago: any, indexPago = 0, accion: 'descargar' | 'previ
     doc.setDrawColor(200);
     doc.line(20, 50, 190, 50);
 
-    // 3. Datos del Servicio
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
     doc.text("Datos del Servicio", 20, 65);
@@ -716,10 +714,11 @@ const generarReciboPDF = (pago: any, indexPago = 0, accion: 'descargar' | 'previ
     doc.setFont("helvetica", "normal");
     doc.text(`Cliente: ${evento.cliente_nombre}`, 20, 75);
     doc.text(`Evento: ${evento.titulo_evento || 'No especificado'}`, 20, 83);
-    doc.text(`Tipo de Servicio: ${evento.tipo_servicio} - ${evento.tipo_cobertura || 'No especificado'}`, 20, 91);
+    
+    // CORRECCIÓN: Separamos los textos en lugar de usar un salto de línea en una plantilla
+    doc.text(`Tipo de Servicio: ${evento.tipo_servicio} - ${evento.tipo_cobertura || ''}`, 20, 91);
     doc.text(`Fecha del Evento: ${formatearFecha(evento.fecha_evento)}`, 20, 99);
 
-    // 4. Caja de Montos
     doc.setDrawColor(200);
     doc.setLineWidth(0.3);
     doc.rect(20, 110, 170, 45, 'S');
@@ -735,7 +734,6 @@ const generarReciboPDF = (pago: any, indexPago = 0, accion: 'descargar' | 'previ
     doc.text(`Total del Presupuesto: $ ${formatearMoneda(evento.total_presupuesto)}`, 25, 137);
     doc.text(`Saldo Restante: $ ${formatearMoneda(evento.saldo_pendiente)}`, 25, 146);
 
-    // 5. Firma Autogenerada Dinámica
     doc.setFont("times", "italic");
     doc.setFontSize(18);
     doc.setTextColor(30, 30, 80);
@@ -751,13 +749,14 @@ const generarReciboPDF = (pago: any, indexPago = 0, accion: 'descargar' | 'previ
     doc.text("Firma Autorizada", 152.5, 226, { align: "center" });
     doc.text(perfilUsuario.value.nombre_empresa, 152.5, 231, { align: "center" });
 
-    // 6. Pie de página dinámico por profesional
     doc.setLineWidth(0.2);
     doc.line(20, 270, 190, 270);
     doc.setFontSize(9);
     doc.setTextColor(150);
     const rubroTexto = perfilUsuario.value.rubro_servicio || 'Servicios Audiovisuales';
-    doc.text(`${perfilUsuario.value.nombre_empresa} - ${rubroTexto}`, 105, 278, { align: "center" });
+    
+    // CORRECCIÓN: Separado para evitar errores de saltos de línea
+    doc.text(`${perfilUsuario.value.nombre_empresa} | ${rubroTexto}`, 105, 278, { align: "center" });
 
     if (accion === 'previsualizar') {
       window.open(doc.output('bloburl'), '_blank');
